@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>O ENIGMA - A Verdade por Trás da Máscara</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs - Carregar primeiro -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check.js"></script>
+    
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCeq5WkIrzdgffC3KU4k_0wKQb66E71asg",
+            authDomain: "o-enigma-db296.firebaseapp.com",
+            projectId: "o-enigma-db296",
+            storageBucket: "o-enigma-db296.firebasestorage.app",
+            messagingSenderId: "377585121416",
+            appId: "1:377585121416:web:9b14ae176d938ba9b8873d",
+            measurementId: "G-P9PSL3GGGF"
+        };
+
+        // Inicializar Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+        const auth = firebase.auth();
+        const appCheck = firebase.appCheck();
+
+        // Função para inicializar Firebase com autenticação e App Check
+        async function initializeFirebase() {
+            try {
+                // Ativar App Check primeiro (substituir pelo teu siteKey do reCAPTCHA v3)
+                await appCheck.activate('TU_SITE_KEY_RECAPTCHA_V3', true);
+                console.log("✅ App Check ativado");
+
+                // Fazer login anônimo
+                await auth.signInAnonymously();
+                console.log("✅ Autenticação anônima ativa");
+
+                // Verificar se o usuário está autenticado
+                const user = auth.currentUser;
+                if (user) {
+                    console.log("✅ Usuário autenticado:", user.uid);
+                    return true;
+                } else {
+                    console.log("❌ Usuário não autenticado");
+                    return false;
+                }
+            } catch (error) {
+                console.error("❌ Erro na inicialização do Firebase:", error);
+                return false;
+            }
+        }
+
+        // Inicializar Firebase quando a página carregar
+        document.addEventListener('DOMContentLoaded', async function() {
+            const firebaseReady = await initializeFirebase();
+            
+            if (firebaseReady) {
+                console.log("🚀 Firebase pronto para uso");
+                // Agora é seguro adicionar o event listener do formulário
+                setupFormSubmission();
+            } else {
+                console.error("❌ Firebase não conseguiu inicializar");
+                alert("Erro na configuração. Por favor, recarregue a página.");
+            }
+        });
+
+        // Função para configurar o envio do formulário (só executada após Firebase estar pronto)
+        function setupFormSubmission() {
+            document.getElementById('castingForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const submitBtn = this.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.textContent = "A enviar...";
+
+                try {
+                    // Verificar se ainda está autenticado
+                    if (!auth.currentUser) {
+                        throw new Error("Usuário não autenticado");
+                    }
+
+                    const fotoRosto = document.getElementById('foto_rosto').files[0];
+                    const fotoCorpo = document.getElementById('foto_corpo').files[0];
+
+                    const timestamp = Date.now();
+                    const rostoRef = storage.ref('candidaturas/' + timestamp + '_rosto_' + fotoRosto.name);
+                    const corpoRef = storage.ref('candidaturas/' + timestamp + '_corpo_' + fotoCorpo.name);
+
+                    await rostoRef.put(fotoRosto);
+                    await corpoRef.put(fotoCorpo);
+
+                    const rostoURL = await rostoRef.getDownloadURL();
+                    const corpoURL = await corpoRef.getDownloadURL();
+
+                    const formData = {};
+                    new FormData(this).forEach((value, key) => {
+                        formData[key] = value;
+                    });
+                    formData.foto_rosto_url = rostoURL;
+                    formData.foto_corpo_url = corpoURL;
+                    formData.data_envio = new Date().toISOString();
+                    formData.user_id = auth.currentUser.uid; // Adicionar ID do usuário autenticado
+
+                    await db.collection('candidaturas').add(formData);
+
+                    alert("✅ Candidatura enviada com sucesso!");
+                    this.reset();
+                    showStep(1);
+                } catch (error) {
+                    console.error("Erro ao enviar candidatura: ", error);
+                    alert("❌ Ocorreu um erro. Tente novamente.");
+                }
+
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Submeter Candidatura";
+            });
+        }
+    </script>
+
+    <style>
+        :root {
+            --cor-fundo: #0a0a0f;
+            --cor-card: #1a1a2e;
+            --cor-texto: #e0e0e0;
+            --cor-texto-secundario: #a0a0a0;
+            --cor-neon-ciano: #00d4ff;
+            --cor-neon-magenta: #ff00ff;
+            --cor-borda: rgba(0, 212, 255, 0.2);
+            --cor-erro: #ff4757;
+            --cor-sucesso: #2ed573;
+            --fonte-titulo: 'Orbitron', sans-serif;
+            --fonte-corpo: 'Inter', sans-serif;
+            --sombra-neon: 0 0 20px rgba(0, 212, 255, 0.3);
+            --sombra-card: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--cor-fundo);
+            color: var(--cor-texto);
+            font-family: var(--fonte-corpo);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* NAVEGAÇÃO */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--cor-borda);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .navbar.scrolled {
+            background: rgba(10, 10, 15, 0.98);
+            box-shadow: var(--sombra-neon);
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .nav-logo {
+            font-family: var(--fonte-titulo);
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--cor-neon-ciano);
+            text-decoration: none;
+            text-shadow: 0 0 10px var(--cor-neon-ciano);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-logo img {
+            height: 40px;
+            width: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--cor-texto);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--cor-neon-magenta);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-links a:hover {
+            color: var(--cor-neon-magenta);
+        }
+
+        .nav-links .watch-live-btn {
+            background: linear-gradient(135deg, var(--cor-neon-magenta), var(--cor-neon-ciano));
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            border: none;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-links .watch-live-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .nav-links .watch-live-btn:hover::before {
+            left: 100%;
+        }
+
+        .nav-links .watch-live-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+        }
+
+        /* HERO SECTION */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(10, 10, 15, 0.8) 0%, rgba(26, 26, 46, 0.8) 100%), url('https://i.ibb.co/Q3H3vq7R/Sem-t-tulo.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(0,212,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-title {
+            font-family: var(--fonte-titulo);
+            font-size: clamp(3rem, 8vw, 8rem);
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 30px var(--cor-neon-ciano);
+            margin-bottom: 1rem;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 30px var(--cor-neon-ciano); }
+            to { text-shadow: 0 0 40px var(--cor-neon-ciano), 0 0 60px var(--cor-neon-ciano); }
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            color: var(--cor-neon-magenta);
+            margin-bottom: 2rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(45deg, var(--cor-neon-ciano), var(--cor-neon-magenta));
+            color: #fff;
+            padding: 1rem 3rem;
+            font-family: var(--fonte-titulo);
+            font-size: 1.2rem;
+            text-decoration: none;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            box-shadow: var(--sombra-neon);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.4);
+        }
+
+        /* COUNTDOWN TIMERS */
+        .countdown-container {
+            display: flex;
+            gap: 3rem;
+            justify-content: center;
+            margin: 3rem 0;
+            flex-wrap: wrap;
+        }
+
+        .countdown-timer {
+            text-align: center;
+            background: rgba(26, 26, 46, 0.8);
+            border: 1px solid var(--cor-borda);
+            border-radius: 15px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            min-width: 280px;
+        }
+
+        .countdown-timer h3 {
+            color: var(--cor-neon-magenta);
+            font-family: var(--fonte-titulo);
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .countdown-display {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .countdown-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 60px;
+        }
+
+        .countdown-number {
+            font-family: var(--fonte-titulo);
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--cor-neon-ciano);
+            text-shadow: 0 0 10px var(--cor-neon-ciano);
+            line-height: 1;
+        }
+
+        .countdown-label {
+            font-size: 0.8rem;
+            color: var(--cor-texto-secundario);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.5rem;
+        }
+
+        .countdown-status {
+            color: var(--cor-texto);
+            font-size: 1rem;
+            margin: 0;
+            font-style: italic;
+        }
+
+        /* SECTIONS */
+        .section {
+            padding: 6rem 0;
+        }
+
+        .section-title {
+            font-family: var(--fonte-titulo);
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            text-align: center;
+            margin-bottom: 3rem;
+            color: #fff;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cor-neon-ciano), var(--cor-neon-magenta));
+        }
+
+        .section-subtitle {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 4rem;
+            font-size: 1.2rem;
+            color: var(--cor-texto-secundario);
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--cor-card);
+            border: 1px solid var(--cor-borda);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: var(--sombra-card);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.2);
+        }
+
+        .card h3 {
+            color: var(--cor-neon-ciano);
+            font-family: var(--fonte-titulo);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .grid {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        /* FORMULÁRIO */
+        .form-container {
+            background: var(--cor-card);
+            border: 1px solid var(--cor-borda);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: var(--sombra-card);
+        }
+
+        .form-step {
+            display: none;
+        }
+
+        .form-step.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-step h3 {
+            color: var(--cor-neon-magenta);
+            font-family: var(--fonte-titulo);
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1.8rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--cor-neon-ciano);
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--cor-borda);
+            border-radius: 8px;
+            color: var(--cor-texto);
+            font-family: var(--fonte-corpo);
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--cor-neon-ciano);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .form-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-family: var(--fonte-corpo);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--cor-neon-ciano);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: #00b8e6;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--cor-neon-magenta);
+            border: 1px solid var(--cor-neon-magenta);
+        }
+
+        .btn-secondary:hover {
+            background: var(--cor-neon-magenta);
+            color: #000;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cor-neon-ciano), var(--cor-neon-magenta));
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--cor-card);
+            border: 1px solid var(--cor-borda);
+            border-radius: 15px;
+            padding: 2rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--cor-texto-secundario);
+            transition: color 0.3s ease;
+        }
+
+        .close-btn:hover {
+            color: var(--cor-erro);
+        }
+
+        /* FOOTER */
+        footer {
+            background: var(--cor-card);
+            border-top: 1px solid var(--cor-borda);
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        .footer-links {
+            margin-bottom: 2rem;
+        }
+
+        .footer-links a {
+            color: var(--cor-texto);
+            text-decoration: none;
+            margin: 0 1rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--cor-neon-ciano);
+        }
+
+        .social-links {
+            margin: 2rem 0;
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            background: rgba(26, 26, 46, 0.8);
+            border: 2px solid transparent;
+            border-radius: 15px;
+            text-decoration: none;
+            color: var(--cor-texto);
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .social-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .social-link:hover::before {
+            left: 100%;
+        }
+
+        .social-icon {
+            width: 24px;
+            height: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .social-link.youtube {
+            border-color: #ff0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.2);
+        }
+
+        .social-link.youtube:hover {
+            background: rgba(255, 0, 0, 0.1);
+            border-color: #ff0000;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
+            transform: translateY(-3px);
+        }
+
+        .social-link.youtube .social-icon {
+            color: #ff0000;
+        }
+
+        .social-link.youtube:hover .social-icon {
+            transform: scale(1.2);
+        }
+
+        .social-link.twitch {
+            border-color: #9146ff;
+            box-shadow: 0 0 20px rgba(145, 70, 255, 0.2);
+        }
+
+        .social-link.twitch:hover {
+            background: rgba(145, 70, 255, 0.1);
+            border-color: #9146ff;
+            box-shadow: 0 0 30px rgba(145, 70, 255, 0.4);
+            transform: translateY(-3px);
+        }
+
+        .social-link.twitch .social-icon {
+            color: #9146ff;
+        }
+
+        .social-link.twitch:hover .social-icon {
+            transform: scale(1.2);
+        }
+
+        .social-link.tiktok {
+            border-color: #ff0050;
+            box-shadow: 0 0 20px rgba(255, 0, 80, 0.2);
+        }
+
+        .social-link.tiktok:hover {
+            background: rgba(255, 0, 80, 0.1);
+            border-color: #ff0050;
+            box-shadow: 0 0 30px rgba(255, 0, 80, 0.4);
+            transform: translateY(-3px);
+        }
+
+        .social-link.tiktok .social-icon {
+            color: #ff0050;
+        }
+
+        .social-link.tiktok:hover .social-icon {
+            transform: scale(1.2);
+        }
+
+        /* RESPONSIVIDADE */
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .nav-links .watch-live-btn {
+                font-size: 0.9rem;
+                padding: 0.6rem 1.2rem;
+            }
+            
+            .hero-title {
+                font-size: 4rem;
+            }
+            
+            .form-container {
+                padding: 2rem 1rem;
+            }
+            
+            .grid-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .social-links {
+                gap: 1rem;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .social-link {
+                width: 250px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- NAVEGAÇÃO -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <a href="#hero" class="nav-logo">
+                    <img src="https://i.ibb.co/CK6PtBWr/LOGOTIPOS-38.png" alt="ENIGMA Logo">
+                    O ENIGMA
+                </a>
+                <div class="nav-links">
+                    <a href="#conceito">Conceito</a>
+                    <a href="#casa">A Casa</a>
+                    <a href="#enigma">O Enigma</a>
+                    <a href="#regras">Regras</a>
+                    <a href="#candidatura">Candidatura</a>
+                    <a href="https://www.twitch.tv/tiobixa" target="_blank" class="watch-live-btn">🔴 ASSISTIR EM DIRETO</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="hero" id="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">O ENIGMA</h1>
+            <p class="hero-subtitle">A Verdade por Trás da Máscara</p>
+            <p class="hero-subtitle" style="font-size: 1.1rem; margin-top: 1rem;">
+                                       12 concorrentes. 5 dias. Segredos Inacreditáveis.<br>
+                       Estás pronto para sobreviver na Casa do Enigma?
+            </p>
+            
+            <!-- COUNTDOWN TIMERS -->
+            <div class="countdown-container">
+                <div class="countdown-timer">
+                    <h3>Candidaturas</h3>
+                    <div class="countdown-display" id="candidaturas-countdown">
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="candidaturas-days">00</span>
+                            <span class="countdown-label">Dias</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="candidaturas-hours">00</span>
+                            <span class="countdown-label">Horas</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="candidaturas-minutes">00</span>
+                            <span class="countdown-label">Minutos</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="candidaturas-seconds">00</span>
+                            <span class="countdown-label">Segundos</span>
+                        </div>
+                    </div>
+                    <p class="countdown-status" id="candidaturas-status">Abrindo em breve...</p>
+                </div>
+                
+                <div class="countdown-timer">
+                    <h3>Estreia</h3>
+                    <div class="countdown-display" id="estreia-countdown">
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="estreia-days">00</span>
+                            <span class="countdown-label">Dias</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="estreia-hours">00</span>
+                            <span class="countdown-label">Horas</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="estreia-minutes">00</span>
+                            <span class="countdown-label">Minutos</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="estreia-seconds">00</span>
+                            <span class="countdown-label">Segundos</span>
+                        </div>
+                    </div>
+                    <p class="countdown-status" id="estreia-status">A estreia está a chegar...</p>
+                </div>
+            </div>
+            
+            <a href="#candidatura" class="cta-button">Candidatar-me Agora</a>
+        </div>
+    </section>
+
+    <!-- CONCEITO -->
+    <section class="section" id="conceito">
+        <div class="container">
+            <h2 class="section-title">O Conceito</h2>
+            <p class="section-subtitle">
+                O ENIGMA não é um reality show. É um interrogatório psicológico de cinco dias onde 12 indivíduos 
+                são confinados numa mansão de luxo, cada um guardando um segredo pessoal devastador.
+            </p>
+            
+            <div class="grid grid-3">
+                <div class="card">
+                    <h3>🎭 O Jogo</h3>
+                    <p>Protege o teu segredo, acumula Enigma Coins (que valem dinheiro real), e sobrevive às eliminações diárias. Cada ação é monitorizada, cada palavra analisada.</p>
+                </div>
+                <div class="card">
+                    <h3>👁️ O Enigma</h3>
+                    <p>Uma entidade omnisciente e sádica que controla o jogo. A sua voz é a lei. Define provas, atribui missões e comunica com os jogadores.</p>
+                </div>
+                <div class="card">
+                    <h3>🕵️ O Infiltrado</h3>
+                    <p>Um dos 12 concorrentes é um ator secretamente a trabalhar para o Enigma, com um segredo falso e missões de sabotagem.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-2" style="margin-top: 3rem;">
+                <div class="card">
+                    <h3>🎯 Objetivo</h3>
+                    <p>O objetivo não é fazer amigos, é sobreviver. Descobrir o segredo de um rival pode levar-te à glória; ter o teu exposto significa a ruína.</p>
+                </div>
+                <div class="card">
+                    <h3>👥 Interatividade</h3>
+                    <p>O público é um participante ativo, usando "Enigma Points" no canal da Twitch (@tiobixa) para influenciar o jogo e decidir eliminações.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- A CASA -->
+    <section class="section" id="casa" style="background: linear-gradient(135deg, rgba(10, 10, 15, 0.9) 0%, rgba(26, 26, 46, 0.9) 100%), url('https://i.ibb.co/dswt1Cdz/Five-M-b2699-GTAProcess-2023-09-26-01-39-35.png'); background-size: cover; background-position: center; background-attachment: fixed;">
+        <div class="container">
+            <h2 class="section-title">A Casa do Enigma</h2>
+            <p class="section-subtitle">
+                Localizada em Grapeseed com vista para o Alamo Sea, a Casa do Enigma é uma fortaleza de luxo e paranoia. 
+                Este não é um lar. É um tabuleiro de jogo.
+            </p>
+            
+            <div class="grid grid-2">
+                <div class="card">
+                    <h3>🏠 Áreas Principais</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin-bottom: 0.5rem;">• <strong>Exteriores:</strong> Piscina, Minibar, Campo de Basket, Heliporto</li>
+                        <li style="margin-bottom: 0.5rem;">• <strong>Interiores:</strong> 2 Quartos Comuns, Quarto do Líder, Sala Principal</li>
+                        <li style="margin-bottom: 0.5rem;">• <strong>Especiais:</strong> Cozinha, Despensa, Confessionário, Antecâmara</li>
+                                                   <li style="margin-bottom: 0.5rem;">• <strong>Arena:</strong> Espaço modular para provas internas</li>
+                        
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>🗺️ Mapa da Casa</h3>
+                    <p>O mapa detalhado da Casa do Enigma será revelado aos concorrentes selecionados. Cada área tem o seu propósito estratégico e pode ser a chave para a sobrevivência.</p>
+                    <div style="background: rgba(0,212,255,0.1); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                        <strong>💡 Dica:</strong> Conhece o teu território. Cada canto da casa pode esconder uma vantagem ou uma armadilha.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- O ENIGMA -->
+    <section class="section" id="enigma" style="background: linear-gradient(135deg, rgba(10, 10, 15, 0.9) 0%, rgba(26, 26, 46, 0.9) 100%), url('https://i.ibb.co/Vpkqyrpw/Bem-vindos-ao-canal-moderno-rosa-intro-youtube-video-7.gif'); background-size: cover; background-position: center; background-attachment: fixed;">
+        <div class="container">
+            <h2 class="section-title">O Enigma</h2>
+            <p class="section-subtitle">
+                A entidade soberana que rege a Casa e o Jogo. As suas ordens são absolutas, inquestionáveis e não passíveis de recurso.
+            </p>
+            
+            <div class="grid grid-2">
+                <div class="card">
+                    <h3>👁️ O Poder</h3>
+                    <p>O Enigma vê tudo, sabe tudo, controla tudo. A sua voz é a única lei na Casa. Recusar uma ordem direta resulta em sanções imediatas.</p>
+                </div>
+                <div class="card">
+                    <h3>🎭 O Jogo</h3>
+                    <p>Define provas, atribui missões e comunica com os jogadores. Cada decisão é calculada para maximizar o drama e a tensão psicológica.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- REGRAS -->
+    <section class="section" id="regras">
+        <div class="container">
+            <h2 class="section-title">Os 10 Mandamentos do Enigma</h2>
+            <p class="section-subtitle">
+                As leis da Casa são poucas, mas absolutas. Violá-las não resulta em aviso. Resulta em eliminação.
+            </p>
+            
+            <div class="grid grid-2">
+                <div class="card">
+                    <h3>📜 Mandamentos Principais</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin-bottom: 0.8rem;">• <strong>Soberania:</strong> Eu sou o Enigma. A minha voz é a única lei.</li>
+                        <li style="margin-bottom: 0.8rem;">• <strong>Segredo:</strong> O teu segredo é a tua alma. Protege-o com a tua vida.</li>
+                        <li style="margin-bottom: 0.8rem;">• <strong>Comunicação:</strong> Não invocarás o meu nome em vão. Só eu inicio o contacto.</li>
+                        <li style="margin-bottom: 0.8rem;">• <strong>Jogo:</strong> Honrarás o jogo acima de tudo. A traição é uma arte que aprecio.</li>
+                        <li>• <strong>Confessionário:</strong> Não mentirás no Confessionário. Comigo, a tua verdade é nua.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>⚖️ Regras da Casa</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin-bottom: 0.8rem;">• <strong>Isolamento Total:</strong> Comunicação com o exterior é proibida</li>
+                        <li style="margin-bottom: 0.8rem;">• <strong>Participação Obrigatória:</strong> Presença em provas e galas é inegociável</li>
+                        <li style="margin-bottom: 0.8rem;">• <strong>Respeito:</strong> Discurso de ódio ou agressão resultam em expulsão</li>
+                        <li style="margin-bottom: 0.8rem;">• <strong>Tarefas:</strong> Todos devem realizar as tarefas domésticas designadas</li>
+                        <li>• <strong>Silêncio:</strong> A discrição é uma vantagem estratégica</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 2rem;">
+                <h3>💰 Sistema de Recompensas</h3>
+                <div class="grid grid-3" style="margin-top: 1rem;">
+                    <div style="text-align: center;">
+                        <h4 style="color: var(--cor-neon-ciano); margin-bottom: 0.5rem;">Enigma Coins</h4>
+                        <p>1 Coin = 1€ do servidor</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <h4 style="color: var(--cor-neon-magenta); margin-bottom: 0.5rem;">Recompensas</h4>
+                        <p>250 a 2.500+ Coins por prova</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <h4 style="color: var(--cor-neon-ciano); margin-bottom: 0.5rem;">Prémio Final</h4>
+                        <p>Todo o valor acumulado em jogo</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CANDIDATURA -->
+    <section class="section" id="candidatura">
+        <div class="container">
+            <h2 class="section-title">Protocolo de Avaliação</h2>
+            <p class="section-subtitle">
+                Bem-vindo ao primeiro passo para entrar na Casa do Enigma. Este questionário é a sua primeira prova. 
+                Não há respostas certas ou erradas, mas a honestidade será a sua melhor ferramenta.
+            </p>
+            
+            <div class="form-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                
+                <form id="castingForm">
+                    <!-- PASSO 1 -->
+                    <div id="step1" class="form-step active">
+                        <h3>PASSO 1/7: IDENTIFICAÇÃO</h3>
+                        <div class="grid grid-2">
+                            <div class="form-group">
+                                <label for="foto_rosto">Fotografia de Rosto (Tipo Passe) (IC)</label>
+                                <input type="file" id="foto_rosto" name="foto_rosto" accept="image/*" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="foto_corpo">Fotografia de Corpo Inteiro (IC)</label>
+                                <input type="file" id="foto_corpo" name="foto_corpo" accept="image/*" required>
+                            </div>
+                        </div>
+                        <div class="grid grid-2">
+                            <div class="form-group">
+                                <label for="nome">Nome Real (IC)</label>
+                                <input type="text" id="nome" name="nome" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="alcunha">Alcunha no Jogo (IC)</label>
+                                <input type="text" id="alcunha" name="alcunha" required>
+                            </div>
+                        </div>
+                        <div class="grid grid-2">
+                            <div class="form-group">
+                                <label for="idade">Idade (IC)</label>
+                                <input type="number" id="idade" name="idade" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="profissao">Profissão (IC)</label>
+                                <input type="text" id="profissao" name="profissao" required>
+                            </div>
+                        </div>
+                        <div class="grid grid-2">
+                            <div class="form-group">
+                                <label for="twitch">Twitch (OOC)</label>
+                                <input type="text" id="twitch" name="twitch" placeholder="Nome de utilizador Twitch">
+                            </div>
+                            <div class="form-group">
+                                <label for="youtube">YouTube (OOC)</label>
+                                <input type="text" id="youtube" name="youtube" placeholder="Canal YouTube">
+                            </div>
+                        </div>
+                        <div class="grid grid-2">
+                            <div class="form-group">
+                                <label for="tiktok">TikTok (OOC)</label>
+                                <input type="text" id="tiktok" name="tiktok" placeholder="Nome de utilizador TikTok">
+                            </div>
+                            <div class="form-group">
+                                <label for="discord">Discord ID (OOC)</label>
+                                <input type="text" id="discord" name="discord" placeholder="Discord ID">
+                            </div>
+                        </div>
+                        <div class="form-navigation">
+                            <span></span>
+                            <button type="button" class="btn btn-primary" onclick="nextStep()">Próximo</button>
+                        </div>
+                    </div>
+
+                    <!-- PASSO 2 -->
+                    <div id="step2" class="form-step">
+                        <h3>PASSO 2/7: PERFIL PSICOLÓGICO</h3>
+                        <div class="form-group">
+                            <label for="estilo">Estilo de Jogo Dominante</label>
+                            <select id="estilo" name="estilo" required>
+                                <option value="">Selecionar perfil...</option>
+                                <option value="estratega">Estratega Frio (alianças por conveniência)</option>
+                                <option value="social">Jogador Social (amigo de todos)</option>
+                                <option value="competidor">Competidor Feroz (focado nas provas)</option>
+                                <option value="caos">Agente do Caos (só quero ver o circo a pegar fogo)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="gatilho">Principal Gatilho Emocional</label>
+                            <select id="gatilho" name="gatilho" required>
+                                <option value="">Selecionar vulnerabilidade...</option>
+                                <option value="injustica">Injustiça percebida</option>
+                                <option value="incompetencia">Incompetência alheia</option>
+                                <option value="traicao">Traição pessoal</option>
+                                <option value="irrelevancia">Ser ignorado ou subestimado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="reacao">Resposta a Ameaças</label>
+                            <select id="reacao" name="reacao" required>
+                                <option value="">Selecionar protocolo...</option>
+                                <option value="confronto">Confronto público e imediato</option>
+                                <option value="vinganca">Retaliação calculada e secreta</option>
+                                <option value="indiferenca">Indiferença estratégica</option>
+                                <option value="escalada">Escalada de hostilidades</option>
+                            </select>
+                        </div>
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep()">Anterior</button>
+                            <button type="button" class="btn btn-primary" onclick="nextStep()">Próximo</button>
+                        </div>
+                    </div>
+
+                    <!-- PASSO 3 -->
+                    <div id="step3" class="form-step">
+                        <h3>PASSO 3/7: ESTRATÉGIA</h3>
+                        <div class="form-group">
+                            <label for="lealdade">Lealdade ou 1 Milhão de Dólares?</label>
+                            <select id="lealdade" name="lealdade" required>
+                                <option value="">Selecionar prioridade...</option>
+                                <option value="lealdade">Lealdade</option>
+                                <option value="dinheiro">O Dinheiro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="alvo">Primeiro Alvo na Casa</label>
+                            <select id="alvo" name="alvo" required>
+                                <option value="">Selecionar alvo...</option>
+                                <option value="forte">O mais forte nas provas</option>
+                                <option value="popular">O mais popular</option>
+                                <option value="inteligente">O mais inteligente</option>
+                                <option value="fraco">O mais fraco</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="manipulacao">Descreva uma situação em que manipulou alguém para conseguir o que queria</label>
+                            <textarea id="manipulacao" name="manipulacao" rows="4" required></textarea>
+                        </div>
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep()">Anterior</button>
+                            <button type="button" class="btn btn-primary" onclick="nextStep()">Próximo</button>
+                        </div>
+                    </div>
+
+                    <!-- PASSO 4 -->
+                    <div id="step4" class="form-step">
+                        <h3>PASSO 4/7: MENTIRAS E ERROS</h3>
+                        <div class="form-group">
+                            <label for="erro">Maior erro que já cometeu na vida</label>
+                            <textarea id="erro" name="erro" rows="4" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="mentira">Mentira mais elaborada que já contou e manteve</label>
+                            <textarea id="mentira" name="mentira" rows="4" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="inseguranca">Maior insegurança</label>
+                            <textarea id="inseguranca" name="inseguranca" rows="4" required></textarea>
+                        </div>
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep()">Anterior</button>
+                            <button type="button" onclick="nextStep()" class="btn btn-primary">Próximo</button>
+                        </div>
+                    </div>
+
+                    <!-- PASSO 5 -->
+                    <div id="step5" class="form-step">
+                        <h3>PASSO 5/7: MOTIVAÇÃO</h3>
+                        <div class="form-group">
+                            <label for="motivacao">Porque é que quer participar no ENIGMA?</label>
+                            <textarea id="motivacao" name="motivacao" rows="4" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="diferenca">O que o torna diferente dos outros candidatos?</label>
+                            <textarea id="diferenca" name="diferenca" rows="4" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="objetivo">Qual é o seu objetivo principal no jogo?</label>
+                            <textarea id="objetivo" name="objetivo" rows="4" required></textarea>
+                        </div>
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep()">Anterior</button>
+                            <button type="button" onclick="nextStep()" class="btn btn-primary">Próximo</button>
+                        </div>
+                    </div>
+
+                    <!-- PASSO 6 -->
+                    <div id="step6" class="form-step">
+                        <h3>PASSO 6/7: PERSONALIDADE</h3>
+                        <div class="form-group">
+                            <label for="forte">Qual é a sua maior força?</label>
+                            <textarea id="forte" name="forte" rows="4" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="fraqueza">Qual é a sua maior fraqueza?</label>
+                            <textarea id="fraqueza" name="fraqueza" rows="4" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="conflito">Como lida com conflitos?</label>
+                            <textarea id="conflito" name="conflito" rows="4" required></textarea>
+                        </div>
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep()">Anterior</button>
+                            <button type="button" onclick="nextStep()" class="btn btn-primary">Próximo</button>
+                        </div>
+                    </div>
+
+                    <!-- PASSO 7 -->
+                    <div id="step7" class="form-step">
+                        <h3>PASSO 7/7: SUBMISSÃO FINAL</h3>
+                        <div class="form-group">
+                            <label for="buzz">Porque é que o público se vai conectar consigo?</label>
+                            <textarea id="buzz" name="buzz" rows="4" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="slogan">Slogan ou frase de efeito que o define</label>
+                            <input type="text" id="slogan" name="slogan" required>
+                        </div>
+                                               <div class="form-group">
+                           <label for="segredo">Qual é o seu maior segredo?</label>
+                           <textarea id="segredo" name="segredo" rows="4" required></textarea>
+                       </div>
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep()">Anterior</button>
+                            <button type="submit" class="btn btn-primary">Submeter Candidatura</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a onclick="openModal('regulamento')">Regulamento</a>
+                <a onclick="openModal('privacidade')">Política de Privacidade</a>
+            </div>
+            <div class="social-links">
+                <a href="https://www.youtube.com/@tiobixa" target="_blank" class="social-link youtube">
+                    <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                    <span>YouTube</span>
+                </a>
+                <a href="https://www.twitch.tv/tiobixa" target="_blank" class="social-link twitch">
+                    <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
+                    </svg>
+                    <span>Twitch</span>
+                </a>
+                <a href="https://www.tiktok.com/@tiobixa" target="_blank" class="social-link tiktok">
+                    <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+                    </svg>
+                    <span>TikTok</span>
+                </a>
+            </div>
+            <p style="color: var(--cor-texto-secundario); margin-top: 1rem;">
+                UMA PRODUÇÃO BIXAFLIX. A TUA MENTE PERTENCE-NOS AGORA.
+            </p>
+        </div>
+    </footer>
+
+    <!-- MODAIS -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // NAVEGAÇÃO SCROLL
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 100) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // FORMULÁRIO MULTI-STEP
+        let currentStep = 1;
+        const totalSteps = 7;
+
+        function updateProgress() {
+            const progress = (currentStep / totalSteps) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function showStep(step) {
+            document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step' + step).classList.add('active');
+            updateProgress();
+        }
+
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                showStep(currentStep);
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+            }
+        }
+
+        // MODAIS
+        function openModal(type) {
+            const modal = document.getElementById('modal');
+            const content = document.getElementById('modal-content');
+            
+                               if (type === 'regulamento') {
+                       content.innerHTML = `
+                           <h3>Regulamento Oficial - O ENIGMA - REALITY SHOW</h3>
+                           <div style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
+                               <h4 style="margin-top: 2rem; margin-bottom: 1rem;">PREÂMBULO</h4>
+                               <p>O presente documento estabelece os termos, condições e regras que regem a participação no evento de entretenimento competitivo "O ENIGMA" (doravante "Programa"), uma produção da BIXAFLIX, a ser realizado no servidor Atlantic RP. A submissão de uma candidatura e a subsequente participação no Programa implicam a leitura, compreensão e aceitação total e irrevogável de todos os artigos deste regulamento. O desconhecimento das regras não poderá ser invocado como justificação para o seu incumprimento.</p>
+                               
+                               <h4 style="margin-top: 2rem; margin-bottom: 1rem;">TÍTULO I - DISPOSIÇÕES GERAIS</h4>
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 1.º - Objeto e Duração</h5>
+                               <ul>
+                                   <li>O ENIGMA é um concurso de formato reality show, focado em estratégia, jogos psicológicos e interação social em ambiente de roleplay.</li>
+                                   <li>O Programa decorrerá de forma ininterrupta entre os dias 3 e 7 de Setembro de 2025.</li>
+                                   <li>A produção, a cargo da BIXAFLIX, reserva-se o direito de alterar as datas do evento por motivos de força maior ou por insuficiência de candidaturas qualificadas, garantindo a comunicação eficaz de quaisquer alterações.</li>
+                               </ul>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 2.º - Elegibilidade e Inscrição</h5>
+                               <ul>
+                                   <li>Podem inscrever-se para participar no Programa todos os cidadãos maiores de idade, ou maiores de dezasseis (16) anos devidamente autorizados por quem exerça o poder paternal.</li>
+                                   <li>A inscrição é feita exclusivamente através do portal oficial do Programa. O candidato deve preencher todos os campos do formulário de avaliação com informações verdadeiras e completas.</li>
+                                   <li>A BIXAFLIX reserva-se o direito de encerrar as inscrições a qualquer momento, a seu exclusivo critério, e de selecionar os participantes através dos métodos que considerar mais adequados, não se limitando aos candidatos inscritos.</li>
+                               </ul>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 3.º - Confidencialidade e Compromisso</h5>
+                               <ul>
+                                   <li>O candidato e/ou participante deverá manter o mais absoluto e estrito sigilo em relação a qualquer informação recebida ou a que tenha acesso durante o processo de casting e a sua participação no Programa.</li>
+                                   <li>Os participantes selecionados comprometem-se a ter disponibilidade total durante os 5 (cinco) dias do Programa e a comparecer em sessões de gravação de material promocional (fotos, vídeos) em datas a designar pela produção antes do início do evento. A não comparência poderá resultar em desqualificação.</li>
+                               </ul>
+                               
+                               <h4 style="margin-top: 2rem; margin-bottom: 1rem;">TÍTULO II - O JOGO E A CASA</h4>
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 4.º - O Enigma</h5>
+                               <ul>
+                                   <li>O Enigma é a entidade soberana que rege a Casa e o Jogo. As suas ordens, decisões e intervenções são absolutas, inquestionáveis e não passíveis de recurso.</li>
+                                   <li>Recusar uma ordem direta do Enigma, ou invocar o seu nome em vão de forma a perturbar a ordem, resultará em sanções imediatas, que podem ir desde a perda de Enigma Coins até à nomeação direta.</li>
+                               </ul>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 5.º - Conduta e Isolamento</h5>
+                               <ul>
+                                   <li>É exigido um nível de roleplay sério, imersivo e de alta qualidade.</li>
+                                   <li>É estritamente proibido o uso de qualquer meio de comunicação externo (Discord, telemóveis OOC, streams de outros participantes, etc.) para obter ou enviar informação relativa ao jogo. A violação desta regra é considerada a infração mais grave e resulta em expulsão sumária e imediata.</li>
+                                   <li>São expressamente proibidas atitudes racistas, sexistas, homofóbicas, xenófobas, ameaças OOC (Out of Character), assédio ou qualquer forma de discurso de ódio. Tais atos resultarão em expulsão imediata do Programa e potenciais sanções adicionais no servidor Atlantic RP.</li>
+                                   <li>É proibido gritar no interior da casa, exceto em atividades ou provas que o justifiquem. A discrição é uma ferramenta de jogo.</li>
+                                   <li>É proibido permanecer AFK (Away From Keyboard) fora da sala especificamente designada para esse efeito.</li>
+                               </ul>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 6.º - Provas, Tarefas e Galas</h5>
+                               <ul>
+                                   <li>A participação em todas as provas designadas e a presença na íntegra das Galas diárias (início às 21:00) são obrigatórias.</li>
+                                   <li>A ausência injustificada a uma Gala ou a recusa sistemática em participar nas provas diárias resultará em nomeação direta na Gala seguinte.</li>
+                                   <li>Todos os concorrentes devem realizar as tarefas domésticas que lhes forem designadas pelo Enigma ou pelo Líder da Casa.</li>
+                               </ul>
+                               
+                               <h4 style="margin-top: 2rem; margin-bottom: 1rem;">TÍTULO III - MECÂNICAS DE JOGO</h4>
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 7.º - Segredos</h5>
+                               <ul>
+                                   <li>Cada concorrente entra na Casa com um Segredo pessoal, atribuído pela produção.</li>
+                                   <li>É expressamente proibido revelar deliberadamente o seu próprio segredo. A descoberta deve ser fruto de investigação, dedução e interação em roleplay.</li>
+                                   <li>É proibido perguntar diretamente a outro jogador qual é o seu segredo.</li>
+                               </ul>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 8.º - Enigma Coins e Economia</h5>
+                               <ul>
+                                   <li>A "Enigma Coin" ($) é a moeda oficial do jogo. Todas as recompensas, apostas e penalizações são transacionadas nesta moeda.</li>
+                                   <li>Cada concorrente entrará na casa com um valor inicial estipulado pela produção.</li>
+                                   <li>É estritamente proibido transferir Enigma Coins para outros jogadores fora das mecânicas oficiais do jogo (ex: prémios de provas, apostas no Confronto). Todas as transações são monitorizadas.</li>
+                               </ul>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 9.º - O Confronto</h5>
+                               <ul>
+                                   <li>A mecânica para tentar adivinhar um segredo, "O Confronto", é um evento de alto risco que só pode ser iniciado com autorização explícita do Enigma, geralmente durante as Galas.</li>
+                                   <li><strong>Custo de Iniciação:</strong> O jogador acusador deve pagar uma taxa de 1.000 Enigma Coins para iniciar o Confronto. Este valor é retirado da sua conta no momento da acusação.</li>
+                                   <li><strong>Resultado (Acerto):</strong> Se o acusador adivinhar corretamente o segredo, recebe 50% do saldo total de Enigma Coins do jogador-alvo.</li>
+                                   <li><strong>Resultado (Erro):</strong> Se o acusador falhar, perde 100% do seu saldo total de Enigma Coins, que é transferido para a conta do jogador-alvo.</li>
+                                   <li>Uma vez iniciado o Confronto, não há possibilidade de desistência. A aposta é final.</li>
+                               </ul>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 10.º - Nomeações e Eliminações</h5>
+                               <ul>
+                                   <li>As nomeações ocorrem durante as Galas e seguem os métodos definidos pelo Enigma (ex: votação em confessionário, votação aberta na sala, etc.).</li>
+                                   <li>Após as nomeações, a votação é aberta ao público através dos canais oficiais da Twitch.</li>
+                                   <li>O público vota para expulsar o concorrente que menos deseja ver na casa. O concorrente com mais votos será eliminado.</li>
+                                   <li>Na Gala Final, a votação é pela positiva, para eleger o grande vencedor.</li>
+                               </ul>
+                               
+                               <h4 style="margin-top: 2rem; margin-bottom: 1rem;">TÍTULO IV - PRÉMIOS E DISPOSIÇÕES FINAIS</h4>
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 11.º - Prémio Final</h5>
+                               <ul>
+                                   <li>O prémio final do ENIGMA será uma combinação do valor total de Enigma Coins acumulado pelos jogadores ao longo do desafio e prémios adicionais (ex: um veículo exclusivo) a serem anunciados pela produção.</li>
+                                   <li>A produção não garante um valor mínimo ou máximo para o prémio final, uma vez que este depende diretamente da performance e da economia gerada dentro do jogo.</li>
+                               </ul>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 12.º - Direitos de Imagem e Conteúdo</h5>
+                               <ul>
+                                   <li>Ao participar, o concorrente concede à BIXAFLIX e aos seus parceiros, de forma gratuita, exclusiva e definitiva, uma licença universal e irrevogável para a utilização, reprodução e difusão da sua imagem, nome, voz e performances (conteúdo) captados durante todo o evento.</li>
+                                   <li>Este conteúdo poderá ser utilizado em qualquer meio ou formato, incluindo, mas não se limitando a, transmissões em direto, vídeos compilados, redes sociais e material promocional, sem limite de tempo ou território.</li>
+                               </ul>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 13.º - Casos Omissos e Alterações</h5>
+                               <ul>
+                                   <li>As dúvidas e os casos omissos não previstos neste Regulamento serão analisados e decididos exclusivamente pela produção do ENIGMA, cujas decisões são finais.</li>
+                                   <li>A BIXAFLIX reserva-se o direito de efetuar alterações a este regulamento a qualquer momento, garantindo a sua divulgação eficaz a todos os participantes.</li>
+                                   <li>O presente regulamento entra em vigor na data da sua publicação.</li>
+                               </ul>
+                               
+                               <p style="text-align: center; margin-top: 2rem; font-weight: bold;">A Produção,<br>BIXAFLIX</p>
+                           </div>
+                       `;
+                               } else if (type === 'privacidade') {
+                       content.innerHTML = `
+                           <h3>Política de Privacidade e Consentimento de Utilização de Imagem - O ENIGMA</h3>
+                           <div style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
+                               <p><strong>Data de Efetivação:</strong> [Inserir Data de Publicação]</p>
+                               <p><strong>Entidade Responsável pelo Tratamento de Dados:</strong> BIXAFLIX (doravante "Produção")</p>
+                               
+                               <h4>PREÂMBULO</h4>
+                               <p>A presente Política de Privacidade e Consentimento de Utilização de Imagem (doravante "Política") descreve como a Produção do programa "O ENIGMA" (doravante "Programa") recolhe, utiliza, armazena e protege os dados pessoais e o conteúdo de imagem e voz dos candidatos e participantes. A submissão de uma candidatura através do portal oficial do Programa constitui uma declaração de que o candidato leu, compreendeu e consentiu de forma livre, expressa e informada com todos os termos aqui descritos.</p>
+                               
+                               <h4 style="margin-top: 2rem; margin-bottom: 1rem;">TÍTULO I - RECOLHA E TRATAMENTO DE DADOS PESSOAIS</h4>
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 1.º - Dados Recolhidos</h5>
+                               <p>A Produção recolhe os seguintes dados através do formulário de avaliação oficial:</p>
+                               <ul>
+                                   <li><strong>Dados de Identificação:</strong> Nome/Alcunha de Roleplay, idade.</li>
+                                   <li><strong>Dados Biométricos:</strong> Fotografias (rosto e corpo inteiro) e gravação de vídeo (que inclui imagem e voz).</li>
+                                   <li><strong>Dados de Perfil:</strong> Respostas ao questionário de avaliação, que incluem informações sobre personalidade, estilo de jogo, motivações e outras informações de caráter subjetivo relevantes para o processo de casting.</li>
+                               </ul>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 2.º - Finalidade do Tratamento</h5>
+                               <p>Os dados pessoais recolhidos têm como finalidade exclusiva:</p>
+                               <ul>
+                                   <li>A avaliação e seleção de candidatos para participação no Programa O ENIGMA.</li>
+                                   <li>A criação de perfis de concorrentes para uso interno da equipa de produção.</li>
+                                   <li>O contacto com os candidatos selecionados para as fases seguintes do processo de casting e para a comunicação de informações logísticas.</li>
+                               </ul>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 3.º - Confidencialidade e Segurança</h5>
+                               <ul>
+                                   <li>A Produção compromete-se a tratar todos os dados pessoais fornecidos com a máxima confidencialidade e a implementar as medidas técnicas e organizacionais adequadas para proteger os dados contra a destruição, perda, alteração, difusão ou acesso não autorizado.</li>
+                                   <li>O acesso aos dados pessoais é restrito à equipa de produção do ENIGMA diretamente envolvida no processo de casting e realização do Programa.</li>
+                                   <li>Os dados pessoais não serão partilhados, vendidos ou alugados a terceiros não afiliados à produção do Programa sem o consentimento explícito do titular dos dados.</li>
+                               </ul>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 4.º - Período de Conservação</h5>
+                               <p>Os dados pessoais dos candidatos não selecionados serão eliminados de forma segura num prazo máximo de 90 (noventa) dias após o término do Programa. Os dados dos participantes selecionados serão conservados pelo período necessário para cumprir as finalidades de produção e arquivo do Programa, conforme descrito no Título II.</p>
+                               
+                               <h4 style="margin-top: 2rem; margin-bottom: 1rem;">TÍTULO II - CONSENTIMENTO DE UTILIZAÇÃO DE IMAGEM E CONTEÚDO</h4>
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 5.º - Definição de "Conteúdo"</h5>
+                               <p>Para os efeitos desta Política, entende-se por "Conteúdo" toda e qualquer imagem (fixa ou em movimento), gravação de voz, nome, persona de roleplay, performances, declarações e qualquer outra forma de expressão pessoal captada durante o processo de seleção e/ou a participação efetiva no Programa.</p>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 6.º - Concessão da Licença</h5>
+                               <ul>
+                                   <li>Ao submeter a candidatura, o candidato concede à BIXAFLIX, e a quaisquer terceiros por ela designados, uma licença de utilização do seu Conteúdo em caráter exclusivo, definitivo, universal, irrevogável e gratuito.</li>
+                                   <li>Esta licença é concedida de forma voluntária e informada, reconhecendo o candidato que a sua participação no Programa é de natureza pública e que a exposição mediática é um elemento intrínseco do mesmo.</li>
+                               </ul>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 7.º - Âmbito e Finalidades da Utilização do Conteúdo</h5>
+                               <p>A licença concedida no artigo anterior abrange o direito de captar, gravar, editar, modificar, reproduzir, distribuir e difundir publicamente o Conteúdo, na sua totalidade ou em extratos, para as seguintes finalidades:</p>
+                               <ul>
+                                   <li><strong>Produção e Transmissão do Programa:</strong> Incluindo, mas não se limitando a, transmissões em direto na plataforma Twitch.tv e outras plataformas de streaming.</li>
+                                   <li><strong>Criação de Obras Derivadas:</strong> Edição e compilação de vídeos para publicação em plataformas como o YouTube, incluindo "melhores momentos", resumos diários, episódios completos, etc.</li>
+                                   <li><strong>Promoção e Marketing:</strong> Utilização do Conteúdo em todo o material de publicidade e marketing do Programa, em qualquer meio ou formato, incluindo redes sociais (Twitter/X, Instagram, TikTok, etc.), websites e outros canais de comunicação.</li>
+                                   <li><strong>Arquivo Histórico:</strong> Inclusão do Conteúdo no arquivo histórico da BIXAFLIX e do Programa O ENIGMA.</li>
+                               </ul>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 8.º - Renúncia a Direitos</h5>
+                               <p>O candidato renuncia expressamente a qualquer direito de inspecionar ou aprovar o produto final em que o seu Conteúdo seja utilizado, bem como a qualquer compensação monetária ou de outra natureza pela utilização do mesmo, para além dos prémios estipulados no Regulamento Oficial do Programa.</p>
+                               
+                               <h4 style="margin-top: 2rem; margin-bottom: 1rem;">TÍTULO III - DIREITOS DO TITULAR DOS DADOS E DISPOSIÇÕES FINAIS</h4>
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 9.º - Direitos do Candidato</h5>
+                               <p>Em conformidade com a legislação de proteção de dados aplicável, o candidato pode exercer os seus direitos de acesso, retificação ou eliminação dos seus dados pessoais (excetuando o Conteúdo licenciado, conforme Art. 6.º), contactando a Produção através dos canais oficiais. A eliminação dos dados durante o processo de casting implica a anulação da candidatura.</p>
+                               
+                               <h5 style="margin-top: 1.5rem; margin-bottom: 1rem;">Artigo 10.º - Alterações à Política</h5>
+                               <ul>
+                                   <li>A Produção reserva-se o direito de alterar a presente Política a qualquer momento. Quaisquer alterações entrarão em vigor imediatamente após a sua publicação no portal oficial do Programa.</li>
+                                   <li>A submissão da candidatura confirma que o candidato é maior de idade (ou possui autorização parental, se aplicável) e que consente de forma inequívoca com todos os termos e condições aqui estabelecidos.</li>
+                               </ul>
+                               
+                               <p style="text-align: center; margin-top: 2rem; font-weight: bold;">A Produção,<br>BIXAFLIX</p>
+                                                        </div>
+                         `;
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        // FECHAR MODAL AO CLICAR FORA
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // SUBMISSÃO DO FORMULÁRIO - Movida para setupFormSubmission() após Firebase estar pronto
+
+        // INICIALIZAR PROGRESSO
+        updateProgress();
+
+        // COUNTDOWN TIMERS
+        function updateCountdowns() {
+            const now = new Date();
+            
+            // Candidaturas: 13 Agosto 2025 00:00H - 20 Agosto 2025 23:59H
+            const candidaturasOpen = new Date('2025-08-13T00:00:00');
+            const candidaturasClose = new Date('2025-08-20T23:59:00');
+            
+            // Estreia: 3 Setembro 2025 21:00H - 7 Setembro 2025 23:59H
+            const estreiaStart = new Date('2025-09-03T21:00:00');
+            const estreiaEnd = new Date('2025-09-07T23:59:00');
+            
+            // Candidaturas countdown
+            if (now < candidaturasOpen) {
+                // Ainda não abriram
+                const timeLeft = candidaturasOpen - now;
+                updateCountdownDisplay('candidaturas', timeLeft, 'Abrindo em breve...');
+            } else if (now >= candidaturasOpen && now <= candidaturasClose) {
+                // Estão abertas
+                const timeLeft = candidaturasClose - now;
+                updateCountdownDisplay('candidaturas', timeLeft, 'Candidaturas abertas! Fecham em breve...');
+            } else {
+                // Já fecharam
+                updateCountdownDisplay('candidaturas', 0, 'Candidaturas encerradas');
+            }
+            
+            // Estreia countdown
+            if (now < estreiaStart) {
+                // Ainda não começou
+                const timeLeft = estreiaStart - now;
+                updateCountdownDisplay('estreia', timeLeft, 'A estreia está a chegar...');
+            } else if (now >= estreiaStart && now <= estreiaEnd) {
+                // Está a decorrer
+                const timeLeft = estreiaEnd - now;
+                updateCountdownDisplay('estreia', timeLeft, 'O ENIGMA está a decorrer! Termina em breve...');
+            } else {
+                // Já terminou
+                updateCountdownDisplay('estreia', 0, 'O ENIGMA terminou');
+            }
+        }
+        
+        function updateCountdownDisplay(type, timeLeft, status) {
+            const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+            
+            if (timeLeft > 0) {
+                document.getElementById(type + '-days').textContent = days.toString().padStart(2, '0');
+                document.getElementById(type + '-hours').textContent = hours.toString().padStart(2, '0');
+                document.getElementById(type + '-minutes').textContent = minutes.toString().padStart(2, '0');
+                document.getElementById(type + '-seconds').textContent = seconds.toString().padStart(2, '0');
+            } else {
+                document.getElementById(type + '-days').textContent = '00';
+                document.getElementById(type + '-hours').textContent = '00';
+                document.getElementById(type + '-minutes').textContent = '00';
+                document.getElementById(type + '-seconds').textContent = '00';
+            }
+            
+            document.getElementById(type + '-status').textContent = status;
+        }
+        
+        // Atualizar countdowns a cada segundo
+        setInterval(updateCountdowns, 1000);
+        
+        // Inicializar countdowns
+        updateCountdowns();
+    </script>
+</body>
+</html>
