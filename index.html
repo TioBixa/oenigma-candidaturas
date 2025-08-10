@@ -9,10 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     
     <!-- Firebase SDKs - Carregar primeiro -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <script>
         // Configuração do Firebase
@@ -26,32 +25,34 @@
             measurementId: "G-P9PSL3GGGF"
         };
 
-        // Inicializar Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-        const appCheck = firebase.appCheck();
+        // Variáveis globais para Firebase
+        let app, db, auth;
 
-        // Função para inicializar Firebase com autenticação e App Check
+        // Função para inicializar Firebase sem autenticação obrigatória
         async function initializeFirebase() {
             try {
-                // Ativar App Check primeiro com a chave do site reCAPTCHA v3
-                await appCheck.activate('6LehXqErAAAAAIc5gepAkFJ7j7_qKFntO6PeZuP7', true);
-                console.log("✅ App Check ativado");
-
-                // Fazer login anônimo
-                await auth.signInAnonymously();
-                console.log("✅ Autenticação anônima ativa");
-
-                // Verificar se o usuário está autenticado
-                const user = auth.currentUser;
-                if (user) {
-                    console.log("✅ Usuário autenticado:", user.uid);
-                    return true;
-                } else {
-                    console.log("❌ Usuário não autenticado");
-                    return false;
+                console.log("🔄 Iniciando Firebase...");
+                
+                // Inicializar Firebase se ainda não foi inicializado
+                if (!app) {
+                    try {
+                        app = firebase.initializeApp(firebaseConfig);
+                        db = firebase.firestore();
+                        auth = firebase.auth();
+                        console.log("✅ Firebase inicializado com sucesso");
+                    } catch (initError) {
+                        console.error("❌ Erro ao inicializar Firebase:", initError);
+                        throw new Error("Falha na inicialização do Firebase");
+                    }
                 }
+                
+                if (!db) {
+                    throw new Error("Firestore não está disponível");
+                }
+                
+                console.log("✅ Firebase pronto para uso (sem autenticação)");
+                return true;
+                
             } catch (error) {
                 console.error("❌ Erro na inicialização do Firebase:", error);
                 return false;
@@ -60,21 +61,87 @@
 
         // Inicializar Firebase quando a página carregar
         document.addEventListener('DOMContentLoaded', async function() {
-            const firebaseReady = await initializeFirebase();
+            console.log("🌐 Página carregada, inicializando Firebase...");
             
-            if (firebaseReady) {
-                console.log("🚀 Firebase pronto para uso");
-                // Agora é seguro adicionar o event listener do formulário
-                setupFormSubmission();
-            } else {
-                console.error("❌ Firebase não conseguiu inicializar");
-                alert("Erro na configuração. Por favor, recarregue a página.");
+            // Mostrar o primeiro passo imediatamente
+            showStep(1);
+            console.log("📝 Primeiro passo mostrado");
+            
+            // Verificar se o Firebase está disponível
+            if (typeof firebase === 'undefined') {
+                console.error("❌ Firebase não está carregado");
+                alert("Erro: Firebase não foi carregado. Verifique a sua ligação à internet.");
+                return;
+            }
+            
+            try {
+                const firebaseReady = await initializeFirebase();
+                
+                if (firebaseReady) {
+                    console.log("🚀 Firebase pronto para uso");
+                    // Agora é seguro adicionar o event listener do formulário
+                    setupFormSubmission();
+                    // Configurar validação em tempo real
+                    setupFieldValidation();
+                } else {
+                    console.error("❌ Firebase não conseguiu inicializar");
+                    alert("Erro na configuração. Por favor, recarregue a página.");
+                }
+            } catch (error) {
+                console.error("❌ Erro crítico na inicialização:", error);
+                alert("Erro crítico na configuração. Por favor, recarregue a página ou contacte o suporte.");
             }
         });
 
+        // Função para validar campos em tempo real
+        function setupFieldValidation() {
+            const requiredFields = [
+                'foto_rosto', 'foto_corpo', 'nome', 'alcunha', 'idade', 'profissao',
+                'estilo', 'gatilho', 'reacao', 'lealdade', 'alvo',
+                'manipulacao', 'erro', 'mentira', 'inseguranca', 'motivacao',
+                'diferenca', 'objetivo', 'forte', 'fraqueza', 'conflito',
+                'buzz', 'slogan', 'segredo'
+            ];
+
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('input', function() {
+                        validateField(this);
+                    });
+                    field.addEventListener('blur', function() {
+                        validateField(this);
+                    });
+                }
+            });
+        }
+
+        // Função para validar um campo individual
+        function validateField(field) {
+            const isValid = field.value && field.value.trim() !== '';
+            
+            if (isValid) {
+                field.classList.remove('invalid');
+                field.classList.add('valid');
+            } else {
+                field.classList.remove('valid');
+                field.classList.add('invalid');
+            }
+        }
+
         // Função para configurar o envio do formulário (só executada após Firebase estar pronto)
         function setupFormSubmission() {
-            document.getElementById('castingForm').addEventListener('submit', async function(e) {
+            console.log("🔧 Configurando envio do formulário...");
+            const form = document.getElementById('castingForm');
+            console.log("📝 Formulário encontrado:", form);
+            
+            if (!form) {
+                console.error("❌ Formulário não encontrado!");
+                return;
+            }
+            
+            form.addEventListener('submit', async function(e) {
+                console.log("🚀 Formulário submetido!");
                 e.preventDefault();
 
                 const submitBtn = this.querySelector('button[type="submit"]');
@@ -82,14 +149,35 @@
                 submitBtn.textContent = "A enviar...";
 
                 try {
-                    // Verificar se ainda está autenticado
-                    if (!auth.currentUser) {
-                        throw new Error("Usuário não autenticado");
+                    // Verificar se o Firebase está disponível
+                    if (!db) {
+                        throw new Error("Firebase não está disponível");
+                    }
+
+                    // Validar todos os campos obrigatórios
+                    const requiredFields = [
+                        'foto_rosto', 'foto_corpo', 'nome', 'alcunha', 'idade', 'profissao',
+                        'estilo', 'gatilho', 'reacao', 'lealdade', 'alvo',
+                        'manipulacao', 'erro', 'mentira', 'inseguranca', 'motivacao',
+                        'diferenca', 'objetivo', 'forte', 'fraqueza', 'conflito',
+                        'buzz', 'slogan', 'segredo'
+                    ];
+
+                    const missingFields = [];
+                    requiredFields.forEach(fieldId => {
+                        const field = document.getElementById(fieldId);
+                        if (field && (!field.value || field.value.trim() === '')) {
+                            missingFields.push(fieldId);
+                        }
+                    });
+
+                    if (missingFields.length > 0) {
+                        throw new Error(`Por favor, preencha todos os campos obrigatórios: ${missingFields.join(', ')}`);
                     }
 
                     // Obter URLs das fotos (já são strings)
-                    const fotoRostoURL = document.getElementById('foto_rosto').value;
-                    const fotoCorpoURL = document.getElementById('foto_corpo').value;
+                    const fotoRostoURL = document.getElementById('foto_rosto').value.trim();
+                    const fotoCorpoURL = document.getElementById('foto_corpo').value.trim();
 
                     // Validar URLs
                     if (!fotoRostoURL || !fotoCorpoURL) {
@@ -111,16 +199,42 @@
                     formData.foto_rosto_url = fotoRostoURL;
                     formData.foto_corpo_url = fotoCorpoURL;
                     formData.data_envio = new Date().toISOString();
-                    formData.user_id = auth.currentUser.uid; // Adicionar ID do usuário autenticado
+                    formData.user_id = "anonymous"; // Usuário anônimo
 
-                    await db.collection('candidaturas').add(formData);
+                    console.log("📤 Enviando dados para Firebase...");
+                    console.log("📊 Dados do formulário:", formData);
+                    
+                    const docRef = await db.collection('candidaturas').add(formData);
+                    console.log("✅ Documento criado com ID:", docRef.id);
 
-                    alert("✅ Candidatura enviada com sucesso!");
+                    alert("🎉 CANDIDATURA ENVIADA COM SUCESSO!\n\nA sua candidatura foi registada na base de dados.\n\nID da candidatura: " + docRef.id + "\n\nObrigado por participar no casting de O ENIGMA!");
+                    
+                    // Reset do formulário
                     this.reset();
+                    console.log("🔄 Formulário resetado");
+                    
+                    // Voltar ao primeiro passo
+                    currentStep = 1;
                     showStep(1);
+                    console.log("🏠 Voltou ao primeiro passo");
                 } catch (error) {
-                    console.error("Erro ao enviar candidatura: ", error);
-                    alert("❌ Ocorreu um erro. Tente novamente.");
+                    console.error("❌ Erro ao enviar candidatura:", error);
+                    
+                    let errorMessage = "❌ Ocorreu um erro ao enviar a candidatura.\n\n";
+                    
+                    if (error.message.includes("Firebase não está disponível")) {
+                        errorMessage += "Erro: Problema de conexão com a base de dados. Por favor, recarregue a página.";
+                    } else if (error.message.includes("campos obrigatórios")) {
+                        errorMessage += "Erro: " + error.message;
+                    } else if (error.message.includes("URLs válidas")) {
+                        errorMessage += "Erro: " + error.message;
+                    } else if (error.message.includes("Firebase")) {
+                        errorMessage += "Erro de conexão com a base de dados. Verifique a sua ligação à internet.";
+                    } else {
+                        errorMessage += "Detalhes: " + error.message;
+                    }
+                    
+                    alert(errorMessage);
                 }
 
                 submitBtn.disabled = false;
@@ -501,8 +615,10 @@
         }
 
         .form-step.active {
-            display: block;
+            display: block !important;
             animation: fadeIn 0.5s ease;
+            position: relative;
+            z-index: 1;
         }
 
         @keyframes fadeIn {
@@ -583,6 +699,29 @@
             box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
         }
 
+        /* Estilos para campos obrigatórios inválidos */
+        .form-group input:invalid,
+        .form-group textarea:invalid,
+        .form-group select:invalid {
+            border-color: var(--cor-erro);
+            box-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
+        }
+
+        .form-group input:invalid:focus,
+        .form-group textarea:invalid:focus,
+        .form-group select:invalid:focus {
+            border-color: var(--cor-erro);
+            box-shadow: 0 0 15px rgba(255, 71, 87, 0.5);
+        }
+
+        /* Estilos para campos obrigatórios válidos */
+        .form-group input:valid,
+        .form-group textarea:valid,
+        .form-group select:valid {
+            border-color: var(--cor-sucesso);
+            box-shadow: 0 0 5px rgba(46, 213, 115, 0.2);
+        }
+
         .form-navigation {
             display: flex;
             justify-content: space-between;
@@ -604,11 +743,147 @@
         .btn-primary {
             background: var(--cor-neon-ciano);
             color: #000;
+            position: relative;
+            z-index: 1000;
+            pointer-events: auto !important;
+            cursor: pointer !important;
         }
 
         .btn-primary:hover {
             background: #00b8e6;
             transform: translateY(-2px);
+        }
+
+        /* Estilo específico para o botão de submit */
+        button[type="submit"] {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            position: relative;
+            z-index: 1000;
+            background: var(--cor-neon-ciano) !important;
+            color: #000 !important;
+            border: none !important;
+            padding: 0.8rem 2rem !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            transition: all 0.3s ease !important;
+        }
+
+        button[type="submit"]:hover {
+            background: #00b8e6 !important;
+            transform: translateY(-2px) !important;
+        }
+
+        /* Garantir que todos os botões sejam clicáveis */
+        .form-navigation button {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            position: relative;
+            z-index: 1000;
+        }
+
+        /* Garantir que o formulário seja clicável */
+        #castingForm {
+            pointer-events: auto !important;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Garantir que todos os elementos do formulário sejam clicáveis */
+        .form-step.active * {
+            pointer-events: auto !important;
+        }
+
+        /* Garantir que o botão de submit seja sempre clicável */
+        button[type="submit"].btn-primary {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            position: relative;
+            z-index: 9999 !important;
+            background: var(--cor-neon-ciano) !important;
+            color: #000 !important;
+            border: none !important;
+            padding: 0.8rem 2rem !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            transition: all 0.3s ease !important;
+        }
+
+        /* Garantir que o botão de submit seja sempre clicável */
+        button[type="submit"].btn-primary:hover {
+            background: #00b8e6 !important;
+            transform: translateY(-2px) !important;
+        }
+
+        /* Garantir que o botão de submit seja sempre clicável */
+        button[type="submit"].btn-primary:active {
+            background: #0099cc !important;
+            transform: translateY(0) !important;
+        }
+
+        /* Garantir que o botão de submit seja sempre clicável */
+        button[type="submit"].btn-primary:focus {
+            outline: 2px solid var(--cor-neon-magenta) !important;
+            outline-offset: 2px !important;
+        }
+
+        /* Garantir que o botão de submit seja sempre clicável */
+        button[type="submit"].btn-primary:disabled {
+            background: #666 !important;
+            color: #999 !important;
+            cursor: not-allowed !important;
+            transform: none !important;
+        }
+
+        /* Garantir que o botão de submit seja sempre clicável */
+        button[type="submit"].btn-primary:enabled {
+            background: var(--cor-neon-ciano) !important;
+            color: #000 !important;
+            cursor: pointer !important;
+        }
+
+        /* Garantir que o botão de submit seja sempre clicável */
+        button[type="submit"].btn-primary:not(:disabled) {
+            background: var(--cor-neon-ciano) !important;
+            color: #000 !important;
+            cursor: pointer !important;
+        }
+
+        /* Garantir que o botão de submit seja sempre clicável */
+        button[type="submit"].btn-primary:not([disabled]) {
+            background: var(--cor-neon-ciano) !important;
+            color: #000 !important;
+            cursor: pointer !important;
+        }
+
+        /* Garantir que o botão de submit seja sempre clicável */
+        button[type="submit"].btn-primary:not([disabled]):hover {
+            background: #00b8e6 !important;
+            transform: translateY(-2px) !important;
+        }
+
+        /* Garantir que o botão de submit seja sempre clicável */
+        button[type="submit"].btn-primary:not([disabled]):active {
+            background: #0099cc !important;
+            transform: translateY(0) !important;
+        }
+
+        /* Garantir que o botão de submit seja sempre clicável */
+        button[type="submit"].btn-primary:not([disabled]):focus {
+            outline: 2px solid var(--cor-neon-magenta) !important;
+            outline-offset: 2px !important;
+        }
+
+        /* Garantir que o botão de submit seja sempre clicável */
+        button[type="submit"].btn-primary:not([disabled]):focus-visible {
+            outline: 2px solid var(--cor-neon-magenta) !important;
+            outline-offset: 2px !important;
+        }
+
+        /* Garantir que o botão de submit seja sempre clicável */
+        button[type="submit"].btn-primary:not([disabled]):focus-within {
+            outline: 2px solid var(--cor-neon-magenta) !important;
+            outline-offset: 2px !important;
         }
 
         .btn-secondary {
@@ -1384,7 +1659,7 @@
                        </div>
                         <div class="form-navigation">
                             <button type="button" class="btn btn-secondary" onclick="prevStep()">Anterior</button>
-                            <button type="submit" class="btn btn-primary">Submeter Candidatura</button>
+                            <button type="submit" class="btn btn-primary" onclick="console.log('Botão clicado!')">Submeter Candidatura</button>
                         </div>
                     </div>
                 </form>
@@ -1454,22 +1729,40 @@
         }
 
         function showStep(step) {
-            document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
-            document.getElementById('step' + step).classList.add('active');
+            console.log("🔄 Mostrando passo:", step);
+            document.querySelectorAll('.form-step').forEach(s => {
+                s.classList.remove('active');
+                console.log("❌ Removido active de:", s.id);
+            });
+            const currentStepElement = document.getElementById('step' + step);
+            if (currentStepElement) {
+                currentStepElement.classList.add('active');
+                console.log("✅ Adicionado active a:", currentStepElement.id);
+            } else {
+                console.error("❌ Elemento não encontrado: step" + step);
+            }
             updateProgress();
         }
 
         function nextStep() {
+            console.log("➡️ Próximo passo. Atual:", currentStep, "Total:", totalSteps);
             if (currentStep < totalSteps) {
                 currentStep++;
+                console.log("🔄 Mudando para passo:", currentStep);
                 showStep(currentStep);
+            } else {
+                console.log("🏁 Já no último passo");
             }
         }
 
         function prevStep() {
+            console.log("⬅️ Passo anterior. Atual:", currentStep);
             if (currentStep > 1) {
                 currentStep--;
+                console.log("🔄 Mudando para passo:", currentStep);
                 showStep(currentStep);
+            } else {
+                console.log("🏁 Já no primeiro passo");
             }
         }
 
