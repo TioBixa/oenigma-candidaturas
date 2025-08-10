@@ -12,7 +12,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check.js"></script>
     
     <script>
@@ -30,15 +29,14 @@
         // Inicializar Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const storage = firebase.storage();
         const auth = firebase.auth();
         const appCheck = firebase.appCheck();
 
         // Função para inicializar Firebase com autenticação e App Check
         async function initializeFirebase() {
             try {
-                // Ativar App Check primeiro (substituir pelo teu siteKey do reCAPTCHA v3)
-                await appCheck.activate('TU_SITE_KEY_RECAPTCHA_V3', true);
+                // Ativar App Check primeiro com a chave do site reCAPTCHA v3
+                await appCheck.activate('6LehXqErAAAAAIc5gepAkFJ7j7_qKFntO6PeZuP7', true);
                 console.log("✅ App Check ativado");
 
                 // Fazer login anônimo
@@ -89,25 +87,29 @@
                         throw new Error("Usuário não autenticado");
                     }
 
-                    const fotoRosto = document.getElementById('foto_rosto').files[0];
-                    const fotoCorpo = document.getElementById('foto_corpo').files[0];
+                    // Obter URLs das fotos (já são strings)
+                    const fotoRostoURL = document.getElementById('foto_rosto').value;
+                    const fotoCorpoURL = document.getElementById('foto_corpo').value;
 
-                    const timestamp = Date.now();
-                    const rostoRef = storage.ref('candidaturas/' + timestamp + '_rosto_' + fotoRosto.name);
-                    const corpoRef = storage.ref('candidaturas/' + timestamp + '_corpo_' + fotoCorpo.name);
+                    // Validar URLs
+                    if (!fotoRostoURL || !fotoCorpoURL) {
+                        throw new Error("Por favor, forneça links válidos para ambas as fotografias");
+                    }
 
-                    await rostoRef.put(fotoRosto);
-                    await corpoRef.put(fotoCorpo);
-
-                    const rostoURL = await rostoRef.getDownloadURL();
-                    const corpoURL = await corpoRef.getDownloadURL();
+                    // Validar formato das URLs
+                    const urlPattern = /^https?:\/\/.+/;
+                    if (!urlPattern.test(fotoRostoURL) || !urlPattern.test(fotoCorpoURL)) {
+                        throw new Error("Por favor, forneça URLs válidas começando com http:// ou https://");
+                    }
 
                     const formData = {};
                     new FormData(this).forEach((value, key) => {
                         formData[key] = value;
                     });
-                    formData.foto_rosto_url = rostoURL;
-                    formData.foto_corpo_url = corpoURL;
+                    
+                    // Adicionar URLs das fotos e metadados
+                    formData.foto_rosto_url = fotoRostoURL;
+                    formData.foto_corpo_url = fotoCorpoURL;
                     formData.data_envio = new Date().toISOString();
                     formData.user_id = auth.currentUser.uid; // Adicionar ID do usuário autenticado
 
@@ -540,6 +542,39 @@
             transition: all 0.3s ease;
         }
 
+        /* Estilos específicos para menus de seleção */
+        .form-group select {
+            background: #1a1a1a;
+            color: #ffffff;
+            cursor: pointer;
+            border: 1px solid #333;
+        }
+
+        .form-group select option {
+            background: #1a1a1a;
+            color: #ffffff;
+            padding: 8px;
+            border: none;
+        }
+
+        .form-group select option:hover {
+            background: #333333;
+            color: #ffffff;
+        }
+
+        .form-group select option:checked {
+            background: var(--cor-neon-ciano);
+            color: #000000;
+            font-weight: bold;
+        }
+
+        /* Estilos para o dropdown quando aberto */
+        .form-group select:focus {
+            background: #1a1a1a;
+            color: #ffffff;
+            border-color: var(--cor-neon-ciano);
+        }
+
         .form-group input:focus,
         .form-group textarea:focus,
         .form-group select:focus {
@@ -585,6 +620,62 @@
         .btn-secondary:hover {
             background: var(--cor-neon-magenta);
             color: #000;
+        }
+
+        /* Estilos para o ícone de informação e tooltip */
+        .info-icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            background: var(--cor-primaria);
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 18px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 8px;
+            cursor: help;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .info-icon:hover {
+            background: var(--cor-secundaria);
+            transform: scale(1.1);
+        }
+
+        .info-icon[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 3px 6px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.1;
+            z-index: 1000;
+            margin-bottom: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            max-width: 500px;
+            min-width: 400px;
+            white-space: pre-line;
+            text-align: left;
+            font-weight: normal;
+        }
+
+        .info-icon[data-tooltip]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.9);
+            margin-bottom: 2px;
         }
 
         .progress-bar {
@@ -1040,7 +1131,7 @@
     <!-- CANDIDATURA -->
     <section class="section" id="candidatura">
         <div class="container">
-            <h2 class="section-title">Protocolo de Avaliação</h2>
+            <h2 class="section-title">Protocolo de Admissão</h2>
             <p class="section-subtitle">
                 Bem-vindo ao primeiro passo para entrar na Casa do Enigma. Este questionário é a sua primeira prova. 
                 Não há respostas certas ou erradas, mas a honestidade será a sua melhor ferramenta.
@@ -1057,12 +1148,44 @@
                         <h3>PASSO 1/7: IDENTIFICAÇÃO</h3>
                         <div class="grid grid-2">
                             <div class="form-group">
-                                <label for="foto_rosto">Fotografia de Rosto (Tipo Passe) (IC)</label>
-                                <input type="file" id="foto_rosto" name="foto_rosto" accept="image/*" required>
+                                <label for="foto_rosto">
+                                    Link da Fotografia de Rosto (Tipo Passe) (IC)
+                                    <span class="info-icon" data-tooltip="📸 Como fazer upload no ImgBB:
+
+1️⃣ Vá para imgbb.com
+2️⃣ Arraste a foto para a página ou clique em 'Start uploading'
+3️⃣ Aguarde o upload e copie o link fornecido
+4️⃣ Cole aqui no formulário
+
+💡 Sem conta necessária!">ⓘ</span>
+                                </label>
+                                <input type="url" id="foto_rosto" name="foto_rosto" placeholder="https://exemplo.com/foto.jpg" required>
+                                <small style="color: var(--cor-texto-secundario); font-size: 0.9rem; margin-top: 0.5rem; display: block;">
+                                    💡 <strong>Serviços gratuitos recomendados:</strong><br>
+                                    • <strong>Imgur:</strong> imgur.com (upload direto, sem conta)<br>
+                                    • <strong>ImgBB:</strong> imgbb.com (upload direto, sem conta)<br>
+                                    • <strong>Google Drive:</strong> Partilhe a imagem e use o link direto
+                                </small>
                             </div>
                             <div class="form-group">
-                                <label for="foto_corpo">Fotografia de Corpo Inteiro (IC)</label>
-                                <input type="file" id="foto_corpo" name="foto_corpo" accept="image/*" required>
+                                <label for="foto_corpo">
+                                    Link da Fotografia de Corpo Inteiro (IC)
+                                    <span class="info-icon" data-tooltip="📸 Como fazer upload no ImgBB:
+
+1️⃣ Vá para imgbb.com
+2️⃣ Arraste a foto para a página ou clique em 'Start uploading'
+3️⃣ Aguarde o upload e copie o link fornecido
+4️⃣ Cole aqui no formulário
+
+💡 Sem conta necessária!">ⓘ</span>
+                                </label>
+                                <input type="url" id="foto_corpo" name="foto_corpo" placeholder="https://exemplo.com/foto.jpg" required>
+                                <small style="color: var(--cor-texto-secundario); font-size: 0.9rem; margin-top: 0.5rem; display: block;">
+                                    💡 <strong>Serviços gratuitos recomendados:</strong><br>
+                                    • <strong>Imgur:</strong> imgur.com (upload direto, sem conta)<br>
+                                    • <strong>ImgBB:</strong> imgbb.com (upload direto, sem conta)<br>
+                                    • <strong>Google Drive:</strong> Partilha a imagem e use o link direto
+                                </small>
                             </div>
                         </div>
                         <div class="grid grid-2">
