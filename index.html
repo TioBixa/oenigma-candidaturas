@@ -129,7 +129,7 @@
             }
         }
 
-        // Função para enviar logs para Discord
+        // Função para enviar logs detalhados para Discord
         async function sendDiscordLog(formData, docId) {
             try {
                 // CONFIGURAÇÃO DO WEBHOOK DO DISCORD
@@ -146,7 +146,19 @@
                 // IMPORTANTE: Mantém esta URL segura! Não a partilhes publicamente.
                 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1415749716175618229/T_L89Y2jyivmvEvFOQ84OWcYIvZak8AM2O0gjkYm-_l__OBYpO4-Vdu9f7VPHflc0eIG";
                 
-                // Formatação dos dados para o Discord
+                // Função auxiliar para truncar texto longo
+                function truncateText(text, maxLength = 200) {
+                    if (!text) return 'Não fornecido';
+                    return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+                }
+
+                // Função auxiliar para formatar URLs
+                function formatUrl(url) {
+                    if (!url || url.trim() === '') return 'Não fornecido';
+                    return url.startsWith('http') ? url : `https://${url}`;
+                }
+
+                // Formatação dos dados para o Discord - EMBED PRINCIPAL
                 const discordEmbed = {
                     title: "🎭 Nova Candidatura - O ENIGMA",
                     description: `**ID da Candidatura:** \`${docId}\`\n**Data de Envio:** ${new Date().toLocaleString('pt-PT')}`,
@@ -164,7 +176,7 @@
                         },
                         {
                             name: "📱 Redes Sociais (OOC)",
-                            value: `**Twitch:** ${formData.twitch || 'Não fornecido'}\n**YouTube:** ${formData.youtube || 'Não fornecido'}\n**TikTok:** ${formData.tiktok || 'Não fornecido'}\n**Discord:** ${formData.discord || 'Não fornecido'}`,
+                            value: `**Twitch:** ${formatUrl(formData.twitch)}\n**YouTube:** ${formatUrl(formData.youtube)}\n**TikTok:** ${formData.tiktok || 'Não fornecido'}\n**Discord:** ${formData.discord || 'Não fornecido'}`,
                             inline: false
                         },
                         {
@@ -174,7 +186,7 @@
                         },
                         {
                             name: "💭 Motivação",
-                            value: formData.motivacao.length > 200 ? formData.motivacao.substring(0, 200) + "..." : formData.motivacao,
+                            value: truncateText(formData.motivacao, 150),
                             inline: false
                         },
                         {
@@ -190,11 +202,64 @@
                     timestamp: new Date().toISOString()
                 };
 
+                // EMBED DETALHADO - Respostas Completas
+                const detailedEmbed = {
+                    title: "📋 Respostas Detalhadas da Candidatura",
+                    description: `**ID:** \`${docId}\` - Todas as respostas do formulário`,
+                    color: 0x9932cc, // Cor roxa
+                    fields: [
+                        {
+                            name: "🎭 Técnicas de Manipulação",
+                            value: `**Manipulação:** ${truncateText(formData.manipulacao, 300)}\n**Erro:** ${truncateText(formData.erro, 300)}\n**Mentira:** ${truncateText(formData.mentira, 300)}\n**Insegurança:** ${truncateText(formData.inseguranca, 300)}`,
+                            inline: false
+                        },
+                        {
+                            name: "🎯 Objetivos e Diferenças",
+                            value: `**Diferença:** ${truncateText(formData.diferenca, 300)}\n**Objetivo:** ${truncateText(formData.objetivo, 300)}`,
+                            inline: false
+                        },
+                        {
+                            name: "💪 Pontos Fortes e Fracos",
+                            value: `**Ponto Forte:** ${truncateText(formData.forte, 300)}\n**Fraqueza:** ${truncateText(formData.fraqueza, 300)}\n**Conflito:** ${truncateText(formData.conflito, 300)}`,
+                            inline: false
+                        },
+                        {
+                            name: "🔥 Buzz e Segredos",
+                            value: `**Buzz:** ${truncateText(formData.buzz, 300)}\n**Segredo:** ${truncateText(formData.segredo, 300)}`,
+                            inline: false
+                        }
+                    ],
+                    footer: {
+                        text: "O ENIGMA - Respostas Completas",
+                        icon_url: "https://i.ibb.co/CK6PtBWr/LOGOTIPOS-38.png"
+                    },
+                    timestamp: new Date().toISOString()
+                };
+
+                // EMBED DE FOTOS
+                const photosEmbed = {
+                    title: "📸 Fotos da Candidatura",
+                    description: `**ID:** \`${docId}\` - Links das fotos fornecidas`,
+                    color: 0xff6b35, // Cor laranja
+                    fields: [
+                        {
+                            name: "🖼️ Fotos Fornecidas",
+                            value: `**Foto do Rosto:** ${formatUrl(formData.foto_rosto)}\n**Foto do Corpo:** ${formatUrl(formData.foto_corpo)}`,
+                            inline: false
+                        }
+                    ],
+                    footer: {
+                        text: "O ENIGMA - Fotos da Candidatura",
+                        icon_url: "https://i.ibb.co/CK6PtBWr/LOGOTIPOS-38.png"
+                    },
+                    timestamp: new Date().toISOString()
+                };
+
                 // Dados para enviar ao Discord
                 const discordPayload = {
                     username: "O ENIGMA Bot",
                     avatar_url: "https://i.ibb.co/CK6PtBWr/LOGOTIPOS-38.png",
-                    embeds: [discordEmbed]
+                    embeds: [discordEmbed, detailedEmbed, photosEmbed]
                 };
 
                 // Enviar para o Discord
@@ -207,7 +272,7 @@
                 });
 
                 if (response.ok) {
-                    console.log("✅ Log enviado para Discord com sucesso");
+                    console.log("✅ Log detalhado enviado para Discord com sucesso");
                 } else {
                     console.error("❌ Erro ao enviar log para Discord:", response.status, response.statusText);
                 }
