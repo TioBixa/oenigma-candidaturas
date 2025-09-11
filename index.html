@@ -129,6 +129,95 @@
             }
         }
 
+        // Função para enviar logs para Discord
+        async function sendDiscordLog(formData, docId) {
+            try {
+                // CONFIGURAÇÃO DO WEBHOOK DO DISCORD
+                // 
+                // COMO CONFIGURAR O WEBHOOK:
+                // 1. Vai ao teu servidor Discord
+                // 2. Clica com o botão direito no canal onde queres receber os logs
+                // 3. Seleciona "Editar Canal" > "Integrações" > "Webhooks"
+                // 4. Clica em "Criar Webhook"
+                // 5. Copia a URL do webhook e substitui a linha abaixo
+                // 
+                // FORMATO DA URL: https://discord.com/api/webhooks/[ID]/[TOKEN]
+                // 
+                // IMPORTANTE: Mantém esta URL segura! Não a partilhes publicamente.
+                const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1415749716175618229/T_L89Y2jyivmvEvFOQ84OWcYIvZak8AM2O0gjkYm-_l__OBYpO4-Vdu9f7VPHflc0eIG";
+                
+                // Formatação dos dados para o Discord
+                const discordEmbed = {
+                    title: "🎭 Nova Candidatura - O ENIGMA",
+                    description: `**ID da Candidatura:** \`${docId}\`\n**Data de Envio:** ${new Date().toLocaleString('pt-PT')}`,
+                    color: 0x00d4ff, // Cor neon ciano
+                    fields: [
+                        {
+                            name: "👤 Identificação",
+                            value: `**Nome:** ${formData.nome}\n**Alcunha:** ${formData.alcunha}\n**Idade:** ${formData.idade}\n**Profissão:** ${formData.profissao}`,
+                            inline: true
+                        },
+                        {
+                            name: "🎮 Perfil de Jogo",
+                            value: `**Estilo:** ${formData.estilo}\n**Gatilho:** ${formData.gatilho}\n**Reação:** ${formData.reacao}`,
+                            inline: true
+                        },
+                        {
+                            name: "📱 Redes Sociais (OOC)",
+                            value: `**Twitch:** ${formData.twitch || 'Não fornecido'}\n**YouTube:** ${formData.youtube || 'Não fornecido'}\n**TikTok:** ${formData.tiktok || 'Não fornecido'}\n**Discord:** ${formData.discord || 'Não fornecido'}`,
+                            inline: false
+                        },
+                        {
+                            name: "🎯 Estratégia",
+                            value: `**Lealdade vs Dinheiro:** ${formData.lealdade}\n**Primeiro Alvo:** ${formData.alvo}`,
+                            inline: true
+                        },
+                        {
+                            name: "💭 Motivação",
+                            value: formData.motivacao.length > 200 ? formData.motivacao.substring(0, 200) + "..." : formData.motivacao,
+                            inline: false
+                        },
+                        {
+                            name: "🎪 Slogan",
+                            value: formData.slogan,
+                            inline: true
+                        }
+                    ],
+                    footer: {
+                        text: "O ENIGMA - Sistema de Logs Automático",
+                        icon_url: "https://i.ibb.co/CK6PtBWr/LOGOTIPOS-38.png"
+                    },
+                    timestamp: new Date().toISOString()
+                };
+
+                // Dados para enviar ao Discord
+                const discordPayload = {
+                    username: "O ENIGMA Bot",
+                    avatar_url: "https://i.ibb.co/CK6PtBWr/LOGOTIPOS-38.png",
+                    embeds: [discordEmbed]
+                };
+
+                // Enviar para o Discord
+                const response = await fetch(DISCORD_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(discordPayload)
+                });
+
+                if (response.ok) {
+                    console.log("✅ Log enviado para Discord com sucesso");
+                } else {
+                    console.error("❌ Erro ao enviar log para Discord:", response.status, response.statusText);
+                }
+
+            } catch (error) {
+                console.error("❌ Erro ao enviar log para Discord:", error);
+                // Não interrompe o processo principal se o Discord falhar
+            }
+        }
+
         // Função para configurar o envio do formulário (só executada após Firebase estar pronto)
         function setupFormSubmission() {
             console.log("🔧 Configurando envio do formulário...");
@@ -206,6 +295,10 @@
                     
                     const docRef = await db.collection('candidaturas').add(formData);
                     console.log("✅ Documento criado com ID:", docRef.id);
+
+                    // Enviar log para Discord em paralelo (não bloqueia o processo principal)
+                    console.log("📨 Enviando log para Discord...");
+                    sendDiscordLog(formData, docRef.id);
 
                     alert("🎉 CANDIDATURA ENVIADA COM SUCESSO!\n\nA sua candidatura foi registada na base de dados.\n\nID da candidatura: " + docRef.id + "\n\nObrigado por participar no casting de O ENIGMA!");
                     
