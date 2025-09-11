@@ -1368,7 +1368,7 @@
             <div class="grid grid-3">
                 <div class="card">
                     <h3>🎭 O Jogo</h3>
-                    <p>Protege o teu segredo, acumula Enigma Coins (que valem dinheiro real), e sobrevive às eliminações diárias. Cada ação é monitorizada, cada palavra analisada.</p>
+                    <p>Protege o teu segredo, acumula Enigma Coins (que valem dinheiro dentro do servidor), e sobrevive às eliminações diárias. Cada ação é monitorizada, cada palavra analisada.</p>
                 </div>
                 <div class="card">
                     <h3>👁️ O Enigma</h3>
@@ -2069,18 +2069,18 @@
             const now = new Date();
             
             // Candidaturas: 13 Agosto 2025 00:00H - 20 Agosto 2025 23:59H
-            const candidaturasOpen = new Date('2025-08-13T00:00:00');
-            const candidaturasClose = new Date('2025-08-20T23:59:00');
+            const candidaturasOpen = new Date('2025-09-13T00:00:00');
+            const candidaturasClose = new Date('2025-08-23T23:59:00');
             
             // Estreia: 3 Setembro 2025 21:00H - 7 Setembro 2025 23:59H
-            const estreiaStart = new Date('2025-09-03T21:00:00');
-            const estreiaEnd = new Date('2025-09-07T23:59:00');
+            const estreiaStart = new Date('2025-10-01T21:00:00');
+            const estreiaEnd = new Date('2025-10-05T23:59:00');
             
             // Candidaturas countdown
             if (now < candidaturasOpen) {
                 // Ainda não abriram
                 const timeLeft = candidaturasOpen - now;
-                updateCountdownDisplay('candidaturas', timeLeft, 'Abrindo em breve...');
+                updateCountdownDisplay('candidaturas', timeLeft, 'Abrem Brevemente...');
             } else if (now >= candidaturasOpen && now <= candidaturasClose) {
                 // Estão abertas
                 const timeLeft = candidaturasClose - now;
