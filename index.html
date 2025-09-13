@@ -8,83 +8,62 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Firebase SDKs - Carregar primeiro -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- Supabase SDK -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
     <script>
-        // Configuração do Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyCeq5WkIrzdgffC3KU4k_0wKQb66E71asg",
-            authDomain: "o-enigma-db296.firebaseapp.com",
-            projectId: "o-enigma-db296",
-            storageBucket: "o-enigma-db296.firebasestorage.app",
-            messagingSenderId: "377585121416",
-            appId: "1:377585121416:web:9b14ae176d938ba9b8873d",
-            measurementId: "G-P9PSL3GGGF"
-        };
+        // Configuração do Supabase - Base de dados unificada
+        const SUPABASE_URL = 'https://pbzwwnhslslqozucwdia.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiend3bmhzbHNscW96dWN3ZGlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMDY1ODksImV4cCI6MjA3MDU4MjU4OX0.VhRjLzGg6LwSdoZlzugAu2lGOAYHThDPdb2Q69MSKhU';
+        
+        // Inicializar cliente Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Variáveis globais para Firebase
-        let app, db, auth;
-
-        // Função para inicializar Firebase sem autenticação obrigatória
-        async function initializeFirebase() {
+        // Função para inicializar Supabase
+        async function initializeSupabase() {
             try {
-                console.log("🔄 Iniciando Firebase...");
+                console.log("🔄 Iniciando Supabase...");
                 
-                // Inicializar Firebase se ainda não foi inicializado
-                if (!app) {
-                    try {
-                        app = firebase.initializeApp(firebaseConfig);
-                        db = firebase.firestore();
-                        auth = firebase.auth();
-                        console.log("✅ Firebase inicializado com sucesso");
-                    } catch (initError) {
-                        console.error("❌ Erro ao inicializar Firebase:", initError);
-                        throw new Error("Falha na inicialização do Firebase");
-                    }
+                // Verificar se o Supabase está disponível
+                if (!supabase) {
+                    throw new Error("Supabase não está disponível");
                 }
                 
-                if (!db) {
-                    throw new Error("Firestore não está disponível");
-                }
-                
-                console.log("✅ Firebase pronto para uso (sem autenticação)");
+                console.log("✅ Supabase inicializado com sucesso");
                 return true;
                 
             } catch (error) {
-                console.error("❌ Erro na inicialização do Firebase:", error);
+                console.error("❌ Erro na inicialização do Supabase:", error);
                 return false;
             }
         }
 
-        // Inicializar Firebase quando a página carregar
+        // Inicializar Supabase quando a página carregar
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log("🌐 Página carregada, inicializando Firebase...");
+            console.log("🌐 Página carregada, inicializando Supabase...");
             
             // Mostrar o primeiro passo imediatamente
             showStep(1);
             console.log("📝 Primeiro passo mostrado");
             
-            // Verificar se o Firebase está disponível
-            if (typeof firebase === 'undefined') {
-                console.error("❌ Firebase não está carregado");
-                alert("Erro: Firebase não foi carregado. Verifique a sua ligação à internet.");
+            // Verificar se o Supabase está disponível
+            if (typeof window.supabase === 'undefined') {
+                console.error("❌ Supabase não está carregado");
+                alert("Erro: Supabase não foi carregado. Verifique a sua ligação à internet.");
                 return;
             }
             
             try {
-                const firebaseReady = await initializeFirebase();
+                const supabaseReady = await initializeSupabase();
                 
-                if (firebaseReady) {
-                    console.log("🚀 Firebase pronto para uso");
+                if (supabaseReady) {
+                    console.log("🚀 Supabase pronto para uso");
                     // Agora é seguro adicionar o event listener do formulário
                     setupFormSubmission();
                     // Configurar validação em tempo real
                     setupFieldValidation();
                 } else {
-                    console.error("❌ Firebase não conseguiu inicializar");
+                    console.error("❌ Supabase não conseguiu inicializar");
                     alert("Erro na configuração. Por favor, recarregue a página.");
                 }
             } catch (error) {
@@ -283,7 +262,7 @@
             }
         }
 
-        // Função para configurar o envio do formulário (só executada após Firebase estar pronto)
+        // Função para configurar o envio do formulário (só executada após Supabase estar pronto)
         function setupFormSubmission() {
             console.log("🔧 Configurando envio do formulário...");
             const form = document.getElementById('castingForm');
@@ -303,9 +282,9 @@
                 submitBtn.textContent = "A enviar...";
 
                 try {
-                    // Verificar se o Firebase está disponível
-                    if (!db) {
-                        throw new Error("Firebase não está disponível");
+                    // Verificar se o Supabase está disponível
+                    if (!supabase) {
+                        throw new Error("Supabase não está disponível");
                     }
 
                     // Validar todos os campos obrigatórios
@@ -350,22 +329,31 @@
                     });
                     
                     // Adicionar URLs das fotos e metadados
-                    formData.foto_rosto_url = fotoRostoURL;
-                    formData.foto_corpo_url = fotoCorpoURL;
+                    formData.foto_rosto = fotoRostoURL;
+                    formData.foto_corpo = fotoCorpoURL;
                     formData.data_envio = new Date().toISOString();
-                    formData.user_id = "anonymous"; // Usuário anônimo
+                    formData.ip_address = null; // Será preenchido pelo Supabase
+                    formData.user_agent = navigator.userAgent;
 
-                    console.log("📤 Enviando dados para Firebase...");
+                    console.log("📤 Enviando dados para Supabase...");
                     console.log("📊 Dados do formulário:", formData);
                     
-                    const docRef = await db.collection('candidaturas').add(formData);
-                    console.log("✅ Documento criado com ID:", docRef.id);
+                    const { data, error } = await supabase
+                        .from('candidaturas')
+                        .insert([formData])
+                        .select();
+                    
+                    if (error) {
+                        throw new Error(`Erro do Supabase: ${error.message}`);
+                    }
+                    
+                    console.log("✅ Candidatura criada com ID:", data[0].id);
 
                     // Enviar log para Discord em paralelo (não bloqueia o processo principal)
                     console.log("📨 Enviando log para Discord...");
-                    sendDiscordLog(formData, docRef.id);
+                    sendDiscordLog(formData, data[0].id);
 
-                    alert("🎉 CANDIDATURA ENVIADA COM SUCESSO!\n\nID da candidatura: " + docRef.id + "\n\nObrigado por participar no casting de O ENIGMA!");
+                    alert("🎉 CANDIDATURA ENVIADA COM SUCESSO!\n\nID da candidatura: " + data[0].id + "\n\nObrigado por participar no casting de O ENIGMA!");
                     
                     // Reset do formulário
                     this.reset();
@@ -380,13 +368,13 @@
                     
                     let errorMessage = "❌ Ocorreu um erro ao enviar a candidatura.\n\n";
                     
-                    if (error.message.includes("Firebase não está disponível")) {
+                    if (error.message.includes("Supabase não está disponível")) {
                         errorMessage += "Erro: Problema de conexão com a base de dados. Por favor, recarregue a página.";
                     } else if (error.message.includes("campos obrigatórios")) {
                         errorMessage += "Erro: " + error.message;
                     } else if (error.message.includes("URLs válidas")) {
                         errorMessage += "Erro: " + error.message;
-                    } else if (error.message.includes("Firebase")) {
+                    } else if (error.message.includes("Supabase")) {
                         errorMessage += "Erro de conexão com a base de dados. Verifique a sua ligação à internet.";
                     } else {
                         errorMessage += "Detalhes: " + error.message;
@@ -2139,7 +2127,7 @@
             }
         }
 
-        // SUBMISSÃO DO FORMULÁRIO - Movida para setupFormSubmission() após Firebase estar pronto
+        // SUBMISSÃO DO FORMULÁRIO - Movida para setupFormSubmission() após Supabase estar pronto
 
         // INICIALIZAR PROGRESSO
         updateProgress();
