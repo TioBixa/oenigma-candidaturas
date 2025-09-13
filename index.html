@@ -332,8 +332,6 @@
                     formData.foto_rosto = fotoRostoURL;
                     formData.foto_corpo = fotoCorpoURL;
                     formData.data_envio = new Date().toISOString();
-                    formData.ip_address = null; // Será preenchido pelo Supabase
-                    formData.user_agent = navigator.userAgent;
 
                     console.log("📤 Enviando dados para Supabase...");
                     console.log("📊 Dados do formulário:", formData);
