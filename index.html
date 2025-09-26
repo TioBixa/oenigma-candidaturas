@@ -38,11 +38,87 @@
             }
         }
 
+        // Função para verificar estado do portal e controlar visibilidade do formulário
+        async function checkPortalState() {
+            try {
+                console.log("🔍 Verificando estado do portal de candidaturas...");
+                
+                const { data, error } = await supabase
+                    .from('portal_candidaturas')
+                    .select('*')
+                    .limit(1);
+
+                if (error) {
+                    console.error("❌ Erro ao verificar estado do portal:", error);
+                    return true; // Assumir que está aberto se não conseguir verificar
+                }
+
+                if (data && data.length > 0) {
+                    const portal = data[0];
+                    
+                    // Ocultar mostrar secção de candidatura baseado no estado
+                    const candidaturaSection = document.querySelector('#candidatura');
+                    const portalStatus = document.getElementById('portal-status');
+                    
+                    if (!portal.portal_aberto) {
+                        // Portal fechado
+                        if (candidaturaSection) {
+                            candidaturaSection.style.display = 'none';
+                        }
+                        
+                        // Mostrar mensagem de portal fechado substituindo o form
+                        if (!portalStatus) {
+                            const statusDiv = document.createElement('div');
+                            statusDiv.id = 'portal-status';
+                            statusDiv.style.cssText = 'text-align: center; padding: 40px; color: var(--cor-texto);';
+                            statusDiv.innerHTML = `
+                                <h2 style="color: var(--cor-erro); margin-bottom: 20px;">🔒 Portal Temporariamente Encerrado</h2>
+                                <p>${portal.mensagem_fechamento || 'Candidaturas temporariamente encerradas. Agarde novidades.'}</p>
+                            `;
+                            
+                            if (candidaturaSection) {
+                                candidaturaSection.parentNode.insertBefore(statusDiv, candidaturaSection);
+                            }
+                        }
+                        
+                        return false;
+                    } else {
+                        // Portal aberto - garantir que seção está visível
+                        if (candidaturaSection) {
+                            candidaturaSection.style.display = 'block';
+                        }
+                        if (portalStatus) {
+                            portalStatus.remove();
+                        }
+                        
+                        // Atualizar títulos dinamicamente se configurados
+                        if (portal.protocolo_titulo) {
+                            const protocoloTitulo = candidaturaSection.querySelector('.section-title');
+                            if (protocoloTitulo) protocoloTitulo.textContent = portal.protocolo_titulo;
+                        }
+                        
+                        if (portal.protocolo_subtitulo) {
+                            const protocoloSubtitulo = candidaturaSection.querySelector('.section-subtitle');
+                            if (protocoloSubtitulo) protocoloSubtitulo.textContent = portal.protocolo_subtitulo;
+                        }
+                        
+                        return true;
+                    }
+                }
+                
+                return true; // Assumir aberto se não há dados
+                
+            } catch (error) {
+                console.error("❌ Erro ao verificar portal:", error);
+                return true; // Assumir que está aberto em caso de erro
+            }
+        }
+
         // Inicializar Supabase quando a página carregar
         document.addEventListener('DOMContentLoaded', async function() {
             console.log("🌐 Página carregada, inicializando Supabase...");
             
-            // Mostrar o primeiro passo imediatamente
+            // Mostrar o primeiro passo imediatamente (só se o portal estiver aberto)
             showStep(1);
             console.log("📝 Primeiro passo mostrado");
             
@@ -58,10 +134,16 @@
                 
                 if (supabaseReady) {
                     console.log("🚀 Supabase pronto para uso");
-                    // Agora é seguro adicionar o event listener do formulário
-                    setupFormSubmission();
-                    // Configurar validação em tempo real
-                    setupFieldValidation();
+                    
+                    // Verificar estado do portal antes de mostrar formulário
+                    const portalAberto = await checkPortalState();
+                    
+                    if (portalAberto) {
+                        // Agora é seguro adicionar o event listener do formulário
+                        setupFormSubmission();
+                        // Configurar validação em tempo real
+                        setupFieldValidation();
+                    }
                 } else {
                     console.error("❌ Supabase não conseguiu inicializar");
                     alert("Erro na configuração. Por favor, recarregue a página.");
@@ -1491,7 +1573,7 @@
     </section>
 
     <!-- O ENIGMA -->
-    <section class="section" id="enigma" style="background: linear-gradient(135deg, rgba(10, 10, 15, 0.9) 0%, rgba(26, 26, 46, 0.9) 100%), url('https://i.ibb.co/dsLxz1RB/Bem-vindos-ao-canal-moderno-rosa-intro-youtube-video-7-1.gif'); background-size: cover; background-position: center; background-attachment: fixed;">
+    <section class="section" id="enigma" style="background: linear-gradient(135deg, rgba(10, 10, 15, 0.9) 0%, rgba(26, 26, 46, 0.9) 100%), url('https://i.ibb.co/Vpkqyrpw/Bem-vindos-ao-canal-moderno-rosa-intro-youtube-video-7.gif'); background-size: cover; background-position: center; background-attachment: fixed;">
         <div class="container">
             <h2 class="section-title">O Enigma</h2>
             <p class="section-subtitle">
