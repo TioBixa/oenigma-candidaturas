@@ -1,0 +1,2088 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow, nosnippet, noarchive">
+    <meta name="description" content="Acesso restrito - O Enigma Fase 2">
+    <title>O ENIGMA - FASE 2 - Formulário Confidencial (Acesso Restrito)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Supabase SDK -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // Configuração do Supabase - Base de dados unificada
+        const SUPABASE_URL = 'https://pbzwwnhslslqozucwdia.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiend3bmhzbHNscW96dWN3ZGlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMDY1ODksImV4cCI6MjA3MDU4MjU4OX0.VhRjLzGg6LwSdoZlzugAu2lGOAYHThDPdb2Q69MSKhU';
+        
+        // Inicializar cliente Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Variáveis globais do formulário
+        let currentStep = 1;
+        let totalSteps = 7; // 20 perguntas divididas em blocos lógicos
+        
+        // Função para inicializar Supabase
+        async function initializeSupabase() {
+            try {
+                console.log("🔄 Iniciando Supabase...");
+                
+                // Verificar se o Supabase está disponível
+                if (!supabase) {
+                    throw new Error("Supabase não está disponível");
+                }
+                
+                console.log("✅ Supabase inicializado com sucesso");
+                return true;
+                
+            } catch (error) {
+                console.error("❌ Erro na inicialização do Supabase:", error);
+                return false;
+            }
+        }
+
+        // Função para configurar o envio do formulário (DESATIVADA - formulário antigo removido)
+        function setupFormSubmission() {
+            console.log("🔧 Configurando envio do formulário...");
+            const form = document.getElementById('fase2Form'); // Este elemento já não existe
+            console.log("📝 Formulário encontrado:", form);
+            
+            if (!form) {
+                console.log("ℹ️ Formulário antigo não encontrado (normal - foi removido)");
+                return;
+            }
+            
+            form.addEventListener('submit', async function(e) {
+                console.log("🚀 Formulário submetido!");
+                e.preventDefault();
+
+                const submitBtn = this.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.textContent = "A enviar...";
+
+                try {
+                    // Verificar se o Supabase está disponível
+                    if (!supabase) {
+                        throw new Error("Supabase não está disponível");
+                    }
+
+                    const formData = {};
+                    new FormData(this).forEach((value, key) => {
+                        formData[key] = value;
+                    });
+                    
+                    // Adicionar metadados
+                    formData.data_envio = new Date().toISOString();
+
+                    console.log("📤 Enviando dados para Supabase...");
+                    console.log("📊 Dados do formulário:", formData);
+                    
+                    const { data, error } = await supabase
+                        .from('candidaturas_fase2')
+                        .insert([formData])
+                        .select();
+                    
+                    if (error) {
+                        console.error("❌ Erro ao inserir dados:", error);
+                        throw error;
+                    }
+
+                    console.log("✅ Candidatura inserida com sucesso:", data);
+                    
+                    alert("🎉 FORMULÁRIO DA FASE 2 ENVIADO COM SUCESSO!\n\nID: " + data[0].id + "\n\nObrigado por nos mostrares o teu lado mais intimista!\n\nEste formulário é confidencial e será analisado apenas pela nossa equipa.");
+                    
+                    // Reset do formulário
+                    this.reset();
+                    currentStep = 1;
+                    showStep(currentStep);
+                    
+                } catch (error) {
+                    console.error("❌ Erro ao submeter formulário:", error);
+                    
+                    let errorMessage = "❌ Erro ao submeter o formulário. Tenta novamente.";
+                    if (error.message) {
+                        errorMessage = "❌ " + error.message;
+                    }
+                    
+                    alert(errorMessage);
+                }
+
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Submeter Fase 2";
+            });
+        }
+
+        // Função para navegar entre passos (DESATIVADA - formulário antigo removido)
+        function showStep(step) {
+            console.log("🔄 Tentando mostrar passo antigo:", step);
+            
+            // Ocultar todos os passos
+            for (let i = 1; i <= totalSteps; i++) {
+                const stepElement = document.getElementById('step' + i);
+                if (stepElement) {
+                    stepElement.classList.remove('active');
+                    stepElement.style.display = 'none';
+                }
+            }
+            
+            // Mostrar o passo atual
+            const currentStepElement = document.getElementById('step' + step);
+            if (currentStepElement) {
+                currentStepElement.classList.add('active');
+                currentStepElement.style.display = 'block';
+                console.log("✅ Passo mostrado:", step);
+            } else {
+                console.log("ℹ️ Elemento antigo não encontrado: step" + step + " (normal - foi removido)");
+            }
+            updateProgress();
+        }
+
+        function nextStep() {
+            console.log("➡️ Próximo passo. Atual:", currentStep, "Total:", totalSteps);
+            if (currentStep < totalSteps) {
+                currentStep++;
+                console.log("🔄 Mudando para passo:", currentStep);
+                showStep(currentStep);
+            } else {
+                console.log("🏁 Já no último passo");
+            }
+        }
+
+        function prevStep() {
+            console.log("⬅️ Passo anterior. Atual:", currentStep);
+            if (currentStep > 1) {
+                currentStep--;
+                console.log("🔄 Mudando para passo:", currentStep);
+                showStep(currentStep);
+            } else {
+                console.log("🏁 Já no primeiro passo");
+            }
+        }
+
+        function updateProgress() {
+            const progressFill = document.getElementById('progressFill');
+            if (progressFill) {
+                const percentage = (currentStep / totalSteps) * 100;
+                progressFill.style.width = percentage + '%';
+                console.log("📊 Progresso atualizado:", percentage + '%');
+            }
+        }
+
+        // Sistema FAQ de toggle
+        function toggleFAQ(element) {
+            const isActive = element.classList.toggle('active');
+            const content = element.nextElementSibling;
+            
+            if (isActive) {
+                content.classList.add('active');
+                console.log('📁 FAQ opening:', element.textContent);
+            } else {
+                content.classList.remove('active');
+                console.log('📁 FAQ closing:', element.textContent);
+            }
+        }
+
+        // Sistema de abas
+        function initTabs() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            // Debug: Verificar se estamos a carregar os elementos corretos
+            console.log(`🔍 Found ${tabButtons.length} tab buttons:`, [...tabButtons].map(b => b.textContent.trim()));
+            console.log(`🔍 Found ${tabContents.length} tab contents:`, [...tabContents].map(c => c.querySelector('h3')?.textContent || 'No h3'));
+
+            tabButtons.forEach((button, index) => {
+                button.addEventListener('click', async () => {
+                    console.log(`🔄 Switching to tab ${index}: ${button.textContent}`);
+                    
+                    // Remover classe active de todos os botões e conteúdos
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        // Resetar estilos inline que podem estar a interferir
+                        content.style.display = '';
+                        content.style.opacity = '';
+                    });
+                    
+                    // Adicionar classe active ao botão e conteúdo selecionados
+                    button.classList.add('active');
+                    
+                    // Aplicar classe active ao conteúdo correto
+                    tabContents[index].classList.add('active');
+                    
+                    console.log(`📋 Tab content ativado para índice ${index}:`, tabContents[index].querySelector('h3')?.textContent);
+                    
+                    // Se for a aba INFOS (índice 1), carregar o calendário
+                    if (index === 1) {
+                        console.log('📋 Aba INFOS ativada - carregando calendário...');
+                        // Se o calendário ainda não foi carregado, carregar agora
+                        if (!window.currentWeekEventsFase2) {
+                            try {
+                                await loadCalendarFase2();
+                            } catch (error) {
+                                console.error('❌ Erro ao carregar calendário:', error);
+                            }
+                        }
+                    }
+                    
+                    console.log(`✅ Tab ${index} ativada: ${button.textContent}`);
+                });
+            });
+
+            // Definir primeiro tab (FASE 2) como ativo por padrão
+            if (tabButtons.length > 0 && tabContents.length > 0) {
+                tabButtons[0].classList.add('active');
+                tabContents[0].classList.add('active');
+                console.log("📝 FASE 2 tab ativada ao carregar página");
+            }
+        }
+
+        // Sistema de passos para form dentro da aba
+        let currentStepTab = 1;
+        const totalStepsTab = 8;
+
+        function showStepTab(step) {
+            for (let i = 1; i <= totalStepsTab; i++) {
+                document.getElementById('step' + i + 'Tab').style.display = i === step ? 'block' : 'none';
+            }
+            updateProgressTab();
+        }
+
+        function nextStepTab() {
+            if (currentStepTab < totalStepsTab) {
+                currentStepTab++;
+                showStepTab(currentStepTab);
+            }
+        }
+
+        function prevStepTab() {
+            if (currentStepTab > 1) {
+                currentStepTab--;
+                showStepTab(currentStepTab);
+            }
+        }
+
+        function updateProgressTab() {
+            const progressFill = document.getElementById('progressFillTab');
+            const percentage = (currentStepTab / totalStepsTab) * 100;
+            if (progressFill) {
+                progressFill.style.width = percentage + '%';
+            }
+        }
+
+        // Inicialização quando a página carregar
+        window.addEventListener('DOMContentLoaded', async function() {
+            console.log("🚀 Página Fase 2 carregada");
+            
+            // Inicializar sistema de abas
+            initTabs();
+            
+            // Inicializar passos do formulário da aba 
+            showStepTab(1);
+            
+            // Configurar validação de campos
+            setupFieldValidation();
+            
+            // Inicializar Supabase
+            const supabaseReady = await initializeSupabase();
+            
+            if (supabaseReady) {
+                console.log("🚀 Supabase pronto para uso");
+                
+                // Setup form tab dentro abas
+                const fase2FormTab = document.getElementById('fase2FormTab');
+                if (fase2FormTab) {
+                    fase2FormTab.addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        console.log('📝 Submissão formulário aba FASE 2');
+                        
+                        const formData = new FormData(fase2FormTab);
+                        const data = Object.fromEntries(formData);
+                        
+                        try {
+                            // Adicionar metadados
+                            data.data_envio = new Date().toISOString();
+                            
+                            // Filtrar campos vazios e adicionar valores padrão para campos obrigatórios
+                            const filteredData = Object.fromEntries(
+                                Object.entries(data).filter(([key, value]) => 
+                                    value !== null && value !== undefined && value !== ''
+                                )
+                            );
+                            
+                            // Adicionar valores padrão para campos perg_* que podem estar faltando
+                            for (let i = 1; i <= 20; i++) {
+                                const fieldName = `perg_${i}`;
+                                if (!filteredData.hasOwnProperty(fieldName)) {
+                                    filteredData[fieldName] = '';
+                                }
+                            }
+                            
+                            console.log('📤 Enviando dados filtrados:', filteredData);
+                            
+                            const { data: result, error } = await supabase
+                                .from('candidaturas_fase2')
+                                .insert([filteredData]);
+                            
+                            if (error) throw error;
+                            
+                            alert("✅ Formulário submetido com sucesso! Esta é uma fase especial reservada apenas para candidatos selecionados.");
+                            fase2FormTab.reset();
+                            showStepTab(1);
+                            
+                        } catch (error) {
+                            console.error('❌ Erro ao submeter dados:', error);
+                            console.error('📊 Dados que causaram erro:', data);
+                            alert("❌ Erro ao submeter formulário. Tenta novamente.");
+                        }
+                    });
+                }
+                
+                // Carregar calendário inicial
+                console.log('📅 Inicializando calendário...');
+                // Carregar calendário para estar pronto quando a aba for ativada
+                setTimeout(async () => {
+                    try {
+                        await loadCalendarFase2();
+                        console.log('✅ Calendário pré-carregado com sucesso');
+                    } catch (error) {
+                        console.error('❌ Erro ao pré-carregar calendário:', error);
+                    }
+                }, 1000);
+            }
+        });
+
+        // Configurar validação de campos
+        function setupFieldValidation() {
+            console.log("🔧 Configurando validação de campos...");
+            
+            const requiredFields = document.querySelectorAll('input[required], textarea[required], select[required]');
+            console.log('🔍 Campos obrigatórios encontrados:', requiredFields.length);
+            
+            requiredFields.forEach(field => {
+                field.addEventListener('blur', function() {
+                    validateField(this);
+                });
+            });
+        }
+
+        function validateField(field) {
+            if (field.hasAttribute('required') && field.value.trim() === '') {
+                field.style.borderColor = '#ff4444';
+                return false;
+            } else {
+                field.style.borderColor = '#00d4ff';
+                return true;
+            }
+        }
+
+        // Verificar se todos os campos obrigatórios estão preenchidos
+        function validateCurrentStep() {
+            const currentStepElement = document.getElementById('step' + currentStepTab + 'Tab');
+            if (!currentStepElement) {
+                console.log('❌ Elemento do passo não encontrado:', 'step' + currentStepTab + 'Tab');
+                return true; // Se não encontrar o elemento, permitir avançar
+            }
+            
+            const requiredFields = currentStepElement.querySelectorAll('input[required], textarea[required], select[required]');
+            console.log('🔍 Campos obrigatórios encontrados no passo', currentStepTab, ':', requiredFields.length);
+            
+            let allValid = true;
+            requiredFields.forEach(field => {
+                // Verificar se o campo está visível
+                if (field.offsetParent === null) {
+                    console.log('⚠️ Campo obrigatório oculto ignorado:', field.name);
+                    return; // Ignorar campos ocultos
+                }
+                
+                const isValid = validateField(field);
+                if (!isValid) {
+                    allValid = false;
+                    console.log('❌ Campo inválido:', field.name);
+                }
+            });
+            
+            return allValid;
+        }
+
+        // Sobrescrever nextStepTab para incluir validação
+        const originalNextStepTab = nextStepTab;
+        nextStepTab = function() {
+            if (validateCurrentStep()) {
+                originalNextStepTab();
+            } else {
+                alert("⛔ Por favor, preenche todos os campos obrigatórios antes de avançar.");
+            }
+        };
+
+        // === SISTEMA DE CALENDÁRIO DINÂMICO ===
+        
+        // Variável global para controle da semana atual
+        let currentWeekStartFase2 = new Date();
+        currentWeekStartFase2.setDate(currentWeekStartFase2.getDate() - currentWeekStartFase2.getDay()); // Domingo
+
+        // Função para carregar calendário da Fase 2
+        async function loadCalendarFase2() {
+            console.log('📅 Carregando calendário Fase 2...');
+            try {
+                // Verificar se o Supabase está disponível
+                if (!supabase) {
+                    throw new Error('Supabase não está disponível');
+                }
+                
+                // Calcular início e fim da semana
+                const startOfWeek = new Date(currentWeekStartFase2);
+                startOfWeek.setHours(0, 0, 0, 0);
+                
+                const endOfWeek = new Date(currentWeekStartFase2);
+                endOfWeek.setDate(endOfWeek.getDate() + 6);
+                endOfWeek.setHours(23, 59, 59, 999);
+                
+                console.log('📅 Período da semana:', startOfWeek.toISOString(), 'a', endOfWeek.toISOString());
+                
+                // Carregar eventos e provas da semana
+                await loadWeeklyEventsFase2(startOfWeek, endOfWeek);
+                updateWeekDisplayFase2();
+                renderCalendarFase2();
+                
+                console.log('✅ Calendário Fase 2 carregado com sucesso');
+            } catch (error) {
+                console.error('❌ Erro ao carregar calendário Fase 2:', error);
+                // Mostrar erro no calendário
+                const calendarContainer = document.getElementById('weeklyCalendarFase2');
+                if (calendarContainer) {
+                    calendarContainer.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--cor-erro);">
+                            <h4>❌ Erro ao carregar calendário</h4>
+                            <p>${error.message}</p>
+                            <button onclick="loadCalendarFase2()" class="btn btn-primary" style="margin-top: 1rem;">Tentar Novamente</button>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Carregar eventos e provas da semana
+        async function loadWeeklyEventsFase2(startDate, endDate) {
+            console.log('📅 Carregando eventos e provas para a semana:', { startDate, endDate });
+            const allEvents = [];
+            
+            try {
+                // Carregar eventos e provas em paralelo
+                const [eventosResult, provasResult] = await Promise.allSettled([
+                    // Carregar eventos
+                    supabase
+                        .from('eventos_agendados')
+                        .select('*')
+                        .gte('data_inicio', startDate.toISOString())
+                        .lte('data_inicio', endDate.toISOString()),
+                    
+                    // Carregar provas
+                    supabase
+                        .from('provas_desafios')
+                        .select('*')
+                ]);
+                
+                // Processar eventos
+                if (eventosResult.status === 'fulfilled' && eventosResult.value.data) {
+                    console.log('📅 Eventos carregados:', eventosResult.value.data.length);
+                    eventosResult.value.data.forEach(evento => {
+                        allEvents.push({
+                            ...evento,
+                            tipo: 'evento',
+                            cor: 'evento',
+                            titulo: evento.titulo || 'Evento sem título',
+                            descricao: evento.descricao || '',
+                            hora: new Date(evento.data_inicio).toLocaleTimeString('pt-PT', { 
+                                hour: '2-digit', 
+                                minute: '2-digit',
+                                timeZone: 'Europe/Lisbon'
+                            }),
+                            data_inicio_original: evento.data_inicio
+                        });
+                    });
+                } else if (eventosResult.status === 'rejected') {
+                    console.error('❌ Erro ao carregar eventos:', eventosResult.reason);
+                }
+                
+                // Processar provas
+                if (provasResult.status === 'fulfilled' && provasResult.value.data) {
+                    console.log('🎯 Provas carregadas:', provasResult.value.data.length);
+                    
+                    // Filtrar provas da semana atual
+                    const provasNaSemana = provasResult.value.data.filter(prova => {
+                        if (!prova.data_prevista) return false;
+                        const dataProva = new Date(prova.data_prevista);
+                        return dataProva >= startDate && dataProva <= endDate;
+                    });
+                    
+                    console.log('🎯 Provas na semana atual:', provasNaSemana.length);
+                    
+                    provasNaSemana.forEach(prova => {
+                        allEvents.push({
+                            ...prova,
+                            tipo: 'prova',
+                            cor: 'prova',
+                            titulo: prova.titulo_prova || prova.titulo || 'Prova sem título',
+                            descricao: prova.descricao || '',
+                            hora: new Date(prova.data_prevista).toLocaleTimeString('pt-PT', { 
+                                hour: '2-digit', 
+                                minute: '2-digit',
+                                timeZone: 'Europe/Lisbon'
+                            }),
+                            data_inicio: prova.data_prevista,
+                            data_inicio_original: prova.data_prevista,
+                            ativa: prova.ativa || false,
+                            estilo_prova: prova.estilo_prova || 'Geral',
+                            tipo_prova: prova.tipo_prova || 'Individual'
+                        });
+                    });
+                } else if (provasResult.status === 'rejected') {
+                    console.error('❌ Erro ao carregar provas:', provasResult.reason);
+                }
+                
+                // Se não há eventos, criar alguns de exemplo para demonstração
+                if (allEvents.length === 0) {
+                    console.log('📝 Nenhum evento encontrado - criando eventos de exemplo...');
+                    const today = new Date();
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(today.getDate() + 1);
+                    
+                    // Criar eventos de exemplo com horários específicos
+                    const todayEvent = new Date(today);
+                    todayEvent.setHours(21, 0, 0, 0); // 21:00
+                    
+                    const tomorrowEvent = new Date(tomorrow);
+                    tomorrowEvent.setHours(14, 0, 0, 0); // 14:00
+                    
+                    allEvents.push(
+                        {
+                            id: 'demo-1',
+                            tipo: 'evento',
+                            titulo: 'GALA OFICIAL',
+                            descricao: 'Gala semanal do Enigma',
+                            data_inicio: todayEvent.toISOString(),
+                            data_inicio_original: todayEvent.toISOString(),
+                            hora: '21:00',
+                            tipo_evento: 'Gala'
+                        },
+                        {
+                            id: 'demo-2',
+                            tipo: 'prova',
+                            titulo: 'PROVA 1: JULGAMENTO',
+                            descricao: 'Primeira prova do Enigma',
+                            data_inicio: tomorrowEvent.toISOString(),
+                            data_inicio_original: tomorrowEvent.toISOString(),
+                            hora: '14:00',
+                            ativa: true,
+                            tipo_prova: 'Individual'
+                        }
+                    );
+                }
+                
+                // Armazenar todos os eventos para a semana atual
+                window.currentWeekEventsFase2 = allEvents;
+                console.log('✅ Total de eventos carregados:', allEvents.length);
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar eventos da semana:', error);
+            }
+        }
+
+        // Renderizar o calendário
+        function renderCalendarFase2() {
+            const calendarContainer = document.getElementById('weeklyCalendarFase2');
+            if (!calendarContainer) {
+                console.error('❌ Container do calendário não encontrado');
+                // Tentar encontrar o container novamente na aba INFOS
+                const retryContainer = document.querySelector('.tab-content .calendar-grid');
+                if (retryContainer) {
+                    console.log('🔄 Container encontrado na segunda tentativa');
+                    renderCalendarInContainer(retryContainer);
+                }
+                return;
+            }
+            
+            renderCalendarInContainer(calendarContainer);
+        }
+
+        function renderCalendarInContainer(container) {
+            console.log('🎨 Renderizando calendário...');
+            console.log('📊 Eventos disponíveis:', window.currentWeekEventsFase2?.length || 0);
+            
+            const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            const weekStart = new Date(currentWeekStartFase2);
+            
+            let calendarHTML = '';
+            
+            // Headers dos dias
+            for (let i = 0; i < 7; i++) {
+                calendarHTML += `<div class="calendar-day-header">${days[i]}</div>`;
+            }
+            
+            // Colunas dos dias
+            for (let i = 0; i < 7; i++) {
+                const currentDay = new Date(weekStart);
+                currentDay.setDate(weekStart.getDate() + i);
+                
+                const dayEvents = getEventsForDayFase2(currentDay);
+                const isToday = isSameDayFase2(currentDay, new Date());
+                
+                console.log(`📅 Dia ${i + 1}: ${currentDay.getDate()}/${currentDay.getMonth() + 1} - ${dayEvents.length} eventos`);
+                
+                calendarHTML += `
+                <div class="calendar-day ${isToday ? 'today' : ''}">
+                    <div class="calendar-day-date">
+                        ${currentDay.getDate()} ${getMonthNameFase2(currentDay.getMonth())}
+                    </div>
+                    <div class="calendar-events">
+                        ${renderDayEventsFase2(dayEvents)}
+                    </div>
+                </div>`;
+            }
+            
+            container.innerHTML = calendarHTML;
+            console.log('✅ Calendário renderizado com sucesso');
+        }
+
+        // Obter eventos para um dia específico
+        function getEventsForDayFase2(date) {
+            if (!window.currentWeekEventsFase2) return [];
+            
+            const dayEvents = window.currentWeekEventsFase2.filter(event => {
+                const eventDate = new Date(event.data_inicio);
+                return isSameDayFase2(eventDate, date);
+            });
+            
+            // Ordenar eventos por hora (mais cedo para mais tarde)
+            return dayEvents.sort((a, b) => {
+                const timeA = new Date(a.data_inicio_original || a.data_inicio).getTime();
+                const timeB = new Date(b.data_inicio_original || b.data_inicio).getTime();
+                return timeA - timeB;
+            });
+        }
+
+        // Renderizar eventos de um dia
+        function renderDayEventsFase2(events) {
+            if (!events || events.length === 0) {
+                return '<div class="calendar-no-events">Sem eventos</div>';
+            }
+            
+            return events.map(event => {
+                const eventType = event.tipo === 'prova' ? 'prova' : (event.tipo_evento?.toLowerCase() || 'outros');
+                const eventIcon = event.tipo === 'prova' ? '🎯' : '📅';
+                
+                // Estilo diferente para provas ativas vs inativas
+                const statusClass = event.tipo === 'prova' ? (event.ativa ? 'prova-ativa' : 'prova-inativa') : '';
+                const statusText = event.tipo === 'prova' ? (event.ativa ? ' (ATIVA)' : ' (INATIVA)') : '';
+                const tipoText = event.tipo === 'prova' && event.tipo_prova ? ` [${event.tipo_prova}]` : '';
+                
+                return `
+                <div class="calendar-event ${statusClass}" 
+                     onclick="showEventDetailsFase2(${event.id}, '${event.tipo || 'evento'}')">
+                    <div class="calendar-event-title">
+                        ${eventIcon} ${event.titulo}${statusText}${tipoText}
+                    </div>
+                    <div class="calendar-event-time">
+                        ${event.hora || ''}
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // Atualizar display da semana
+        function updateWeekDisplayFase2() {
+            const weekEnd = new Date(currentWeekStartFase2);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            
+            const display = document.getElementById('calendarWeekDisplayFase2');
+            if (display) {
+                display.textContent = `${formatDateFase2(currentWeekStartFase2)} - ${formatDateFase2(weekEnd)}`;
+            }
+        }
+
+        // Funções de navegação
+        window.previousWeekFase2 = function() {
+            currentWeekStartFase2.setDate(currentWeekStartFase2.getDate() - 7);
+            loadCalendarFase2();
+        };
+
+        window.nextWeekFase2 = function() {
+            currentWeekStartFase2.setDate(currentWeekStartFase2.getDate() + 7);
+            loadCalendarFase2();
+        };
+
+        window.refreshCalendarFase2 = function() {
+            loadCalendarFase2();
+        };
+
+        // Função para mostrar detalhes do evento
+        window.showEventDetailsFase2 = function(eventId, eventType) {
+            const event = window.currentWeekEventsFase2?.find(e => e.id === eventId);
+            if (!event) return;
+            
+            let message = '';
+            
+            if (eventType === 'prova') {
+                message = `
+🎯 PROVA: ${event.titulo}
+📅 Data Prevista: ${new Date(event.data_inicio).toLocaleString('pt-PT')}
+📝 Descrição: ${event.descricao || 'Sem descrição'}
+🎨 Estilo: ${event.estilo_prova || 'Geral'}
+👥 Tipo: ${event.tipo_prova || 'Individual'}
+📊 Status: ${event.status_prova || 'Configurada'}
+${event.data_fim ? `🏁 Data Fim: ${new Date(event.data_fim).toLocaleString('pt-PT')}` : ''}
+${event.ativa ? '🟢 Ativa' : '🔴 Inativa'}
+                `.trim();
+            } else {
+                message = `
+📅 EVENTO: ${event.titulo}
+📅 Data: ${new Date(event.data_inicio).toLocaleString('pt-PT')}
+📝 Tipo: ${event.tipo_evento || 'Evento'}
+${event.descricao ? `📝 Descrição: ${event.descricao}` : ''}
+                `.trim();
+            }
+            
+            alert(message);
+        };
+
+        // Funções auxiliares do calendário
+        function formatDateFase2(date) {
+            const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+            return date.toLocaleDateString('pt-PT', options);
+        }
+
+        function getMonthNameFase2(month) {
+            const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
+                           'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            return months[month];
+        }
+
+        function isSameDayFase2(date1, date2) {
+            return date1.getFullYear() === date2.getFullYear() &&
+                   date1.getMonth() === date2.getMonth() &&
+                   date1.getDate() === date2.getDate();
+        }
+    </script>
+    
+    <style>
+        :root {
+            --cor-primaria: #00d4ff;
+            --cor-secundaria: #ff00ff;
+            --cor-fundo: #0a0a0a;
+            --cor-fundo-alternativo: #1a1a1a;
+            --cor-card: #1a1a2e;
+            --cor-texto: #ffffff;
+            --cor-texto-secundario: #cccccc;
+            --cor-borda: rgba(0, 212, 255, 0.2);
+            --cor-erro: #ff4444;
+            --cor-sucesso: #44ff44;
+            --cor-neon-ciano: #00d4ff;
+            --cor-neon-magenta: #ff00ff;
+            --sombra-neon: 0 0 20px rgba(0, 212, 255, 0.3);
+            --sombra-card: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --fonte-titulo: 'Orbitron', monospace;
+            --fonte-corpo: 'Inter', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--fonte-corpo);
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: var(--cor-texto);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* HEADER STYLES */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--cor-primaria);
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: var(--fonte-titulo);
+            font-size: 1.8rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, var(--cor-primaria), var(--cor-secundaria));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--cor-texto);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-weight: 600;
+        }
+
+        .nav-links a:hover {
+            color: var(--cor-primaria);
+        }
+
+        .back-home-btn {
+            background: linear-gradient(45deg, var(--cor-primaria), var(--cor-secundaria));
+            color: white;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .back-home-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+        }
+
+        /* NAVEGAÇÃO */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--cor-primaria);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .navbar.scrolled {
+            background: rgba(10, 10, 15, 0.98);
+            box-shadow: var(--sombra-neon);
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .nav-logo {
+            font-family: var(--fonte-titulo);
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--cor-neon-ciano);
+            text-decoration: none;
+            text-shadow: 0 0 10px var(--cor-neon-ciano);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-logo img {
+            height: 40px;
+            width: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--cor-texto);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--cor-neon-magenta);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-links a:hover {
+            color: var(--cor-neon-magenta);
+        }
+
+        .nav-links .watch-live-btn {
+            background: linear-gradient(135deg, var(--cor-neon-magenta), var(--cor-neon-ciano));
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            border: none;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-links .watch-live-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            margin-top: 100px;
+            padding: 2rem 0;
+            min-height: 100vh;
+        }
+
+        .section {
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-title {
+            font-family: var(--fonte-titulo);
+            font-size: 3rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--cor-primaria), var(--cor-secundaria));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            text-align: center;
+            color: var(--cor-texto-secundario);
+            margin-bottom: 3rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* FORM STYLES */
+        .form-container {
+            background: var(--cor-fundo-alternativo);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: var(--sombra-neon);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            position: relative;
+            margin: 2rem auto;
+            max-width: 800px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 212, 255, 0.2);
+            border-radius: 3px;
+            margin-bottom: 3rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
+            border-radius: 3px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .form-step {
+            display: none;
+        }
+
+        .form-step.active {
+            display: block;
+        }
+
+        .form-step h3 {
+            font-family: var(--fonte-titulo);
+            font-size: 1.5rem;
+            color: var(--cor-primaria);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            color: var(--cor-texto);
+            font-size: 1rem;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 1rem;
+            background: var(--cor-fundo);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            color: var(--cor-texto);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--cor-primaria);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+        }
+
+        .form-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 3rem;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--cor-primaria), var(--cor-secundaria));
+            color: white;
+            box-shadow: var(--sombra-neon);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--cor-texto-secundario);
+            border: 2px solid var(--cor-texto-secundario);
+        }
+
+        .btn-secondary:hover {
+            background: var(--cor-texto-secundario);
+            color: var(--cor-fundo);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* INFO ICONS */
+        .info-icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            background: var(--cor-primaria);
+            color: var(--cor-fundo);
+            border-radius: 50%;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 8px;
+            cursor: help;
+            line-height: 18px;
+        }
+
+        /* TABS SYSTEM */
+        .tabs-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--cor-card);
+            border: 1px solid var(--cor-borda);
+            border-radius: 20px;
+            box-shadow: var(--sombra-neon);
+            overflow: hidden;
+        }
+
+        .tabs-header {
+            display: flex;
+            background: var(--cor-fundo);
+            border-bottom: 1px solid var(--cor-borda);
+            overflow-x: auto;
+        }
+
+        .tab-button {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 1.5rem 1rem;
+            color: var(--cor-texto-secundario);
+            font-family: var(--fonte-titulo);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--cor-neon-ciano);
+        }
+
+        .tab-button.active {
+            background: var(--cor-card);
+            color: var(--cor-neon-ciano);
+            border-bottom-color: var(--cor-neon-ciano);
+            box-shadow: 0 2px 10px rgba(0, 212, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 2rem;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-content h3 {
+            color: var(--cor-neon-ciano);
+            font-family: var(--fonte-titulo);
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            text-shadow: 0 0 10px var(--cor-neon-ciano);
+            letter-spacing: 1px;
+        }
+
+        .tab-content h4 {
+            color: var(--cor-neon-magenta);
+            font-family: var(--fonte-titulo);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            text-shadow: 0 0 8px var(--cor-neon-magenta);
+        }
+
+        /* Melhorar formatação dos passos do formulário na FASE 2 */
+        .form-step h3 {
+            color: var(--cor-neon-magenta);
+            font-family: var(--fonte-titulo);
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            text-shadow: 0 0 8px var(--cor-neon-magenta);
+            border-bottom: 2px solid var(--cor-neon-magenta);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Estilos para FAQ */
+        .faq-item {
+            border-radius: 15px;
+            background: rgba(0, 212, 255, 0.05);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .faq-title {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--cor-neon-ciano);
+            padding: 1rem 1.5rem;
+            margin: 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid transparent;
+        }
+
+        .faq-title:hover {
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--cor-neon-magenta);
+            border-bottom-color: var(--cor-neon-ciano);
+        }
+
+        .faq-content {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0 1.5rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            opacity: 0;
+        }
+
+        .faq-content.active {
+            padding: 1.5rem;
+            max-height: 2000px;
+            opacity: 1;
+            animation: slideDown 0.4s ease;
+        }
+        
+
+        /* Ensure FAQ content structure is stable */
+        .tab-content .faq-item {
+            margin-bottom: 1.5rem;
+            overflow: visible !important;
+        }
+
+        /* Força título FAQ ser visível quando ativo */
+        .tab-content.active .faq-title {
+            display: flex !important;
+            visibility: visible !important;
+        }
+
+        /* Garantir que o conteúdo das abas seja sempre visível quando ativo */
+        .tab-content.active {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+
+        /* Garantir que os FAQ items sejam visíveis nas abas */
+        .tab-content.active .faq-item {
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        .faq-title.active {
+            background: rgba(0, 212, 255, 0.2);
+            border-bottom-color: var(--cor-neon-magenta);
+            transform: translateY(-2px);
+        }
+
+        .faq-title.active::after {
+            content: '➖';
+            transition: transform 0.3s ease;
+            transform: rotate(0deg);
+        }
+
+        .faq-title::after {
+            content: '➕';
+            transition: transform 0.3s ease;
+            transform: rotate(0deg);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .tab-content .grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .tab-content .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .tab-content .feature-card {
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 15px;
+            padding: 1.5rem;
+        }
+
+        /* Estilos específicos para o calendário */
+        .calendar-container {
+            background: var(--cor-card);
+            border: 1px solid var(--cor-borda);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem 0;
+            min-height: 400px;
+            position: relative;
+        }
+
+        /* Estilos para o calendário integrado na aba INFOS */
+        .faq-content .calendar-container {
+            margin-top: 1rem;
+        }
+
+        .calendar-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background: rgba(0, 212, 255, 0.1);
+            padding: 1rem;
+            border-radius: 15px;
+        }
+
+        .calendar-week-display {
+            color: var(--cor-neon-ciano);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .calendar-day-header {
+            background: rgba(0, 212, 255, 0.1);
+            padding: 1rem;
+            text-align: center;
+            border-radius: 10px;
+            color: var(--cor-neon-ciano);
+            font-weight: 600;
+        }
+
+        .calendar-day {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 15px;
+            padding: 1rem;
+            min-height: 200px;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-day.today {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--cor-neon-ciano);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .calendar-day-date {
+            color: var(--cor-neon-ciano);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .calendar-events {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .calendar-event {
+            background: rgba(0, 212, 255, 0.15);
+            border: 1px solid var(--cor-neon-ciano);
+            border-radius: 8px;
+            padding: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-event:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+        }
+
+        .calendar-event.prova-ativa {
+            background: rgba(46, 213, 115, 0.15);
+            border-color: #2ed573;
+        }
+
+        .calendar-event.prova-inativa {
+            background: rgba(255, 71, 87, 0.15);
+            border-color: #ff4757;
+        }
+
+        .calendar-event-title {
+            color: var(--cor-texto);
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .calendar-event-time {
+            color: var(--cor-texto-secundario);
+            font-size: 0.8rem;
+        }
+
+        .calendar-no-events {
+            color: var(--cor-texto-secundario);
+            text-align: center;
+            font-size: 0.9rem;
+            padding: 1rem;
+        }
+
+        .calendar-info {
+            margin-top: 2rem;
+            background: rgba(255, 0, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 1px solid var(--cor-neon-magenta);
+        }
+
+        .calendar-info h5 {
+            color: var(--cor-neon-ciano);
+            margin-bottom: 1rem;
+        }
+
+        .calendar-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .calendar-info-item {
+            background: rgba(0, 212, 255, 0.1);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .calendar-info-item h6 {
+            color: var(--cor-neon-ciano);
+            margin-bottom: 0.5rem;
+        }
+
+        .calendar-info-item.prova-ativa {
+            background: rgba(46, 213, 115, 0.1);
+        }
+
+        .calendar-info-item.prova-ativa h6 {
+            color: #2ed573;
+        }
+
+        .calendar-info-item.prova-inativa {
+            background: rgba(255, 71, 87, 0.1);
+        }
+
+        .calendar-info-item.prova-inativa h6 {
+            color: #ff4757;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .section-title {
+                font-size: 2rem;
+            }
+            
+            .form-container {
+                padding: 2rem 1rem;
+                margin: 1rem;
+            }
+            
+            .form-navigation {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- NAVEGAÇÃO -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <a href="index.html" class="nav-logo">
+                    <img src="https://i.ibb.co/CK6PtBWr/LOGOTIPOS-38.png" alt="ENIGMA Logo">
+                    O ENIGMA
+                </a>
+                <div class="nav-links">
+                    <a href="index.html#conceito">Conceito</a>
+                    <a href="index.html#casa">A Casa</a>
+                    <a href="index.html#enigma">O Enigma</a>
+                    <a href="index.html#regras">Regras</a>
+                    <a href="index.html#candidatura">Candidatura</a>
+                    <a href="https://www.twitch.tv/tiobixa" target="_blank" class="watch-live-btn">🔴 ASSISTIR EM DIRETO</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <div class="container">
+            <section class="section" id="fase2">
+                <div style="background: rgba(255, 0, 255, 0.1); border: 2px solid var(--cor-secundaria); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; text-align: center;">
+                    <h3 style="color: var(--cor-secundaria); font-family: var(--fonte-titulo); margin-bottom: 1rem;">⚠️ ACESSO PRIVADO - FASE SELETIVA ⚠️</h3>
+                    <p style="color: var(--cor-texto-secundario); font-size: 1.1rem;">
+                        Esta página é reservada apenas para candidatos selecionados pela nossa equipa. 
+                        Se chegaste aqui através de link partilhado pelos nossos produtores, estás no local correto.
+                    </p>
+                </div>
+                
+                <h1 class="section-title">FASE 2 - CONFIRMAÇÃO DE PERSONALIDADE</h1>
+                <p class="section-subtitle">
+                    Esta é uma fase mais íntima do processo. As perguntas desta seção revelam o teu lado mais autêntico e pessoal. 
+                    Não tens de responder a todas, mas a tua honestidade tornará este processo mais autêntico para ti.
+                </p>
+                
+                <!-- SECÇÃO DE MANUAL COM ABAS -->
+                <div class="tabs-container" style="margin-top: 2rem;">
+                    <h2 class="section-title" style="margin-bottom: 0.5rem;">📋 Manual Oficial do Jogo</h2>
+                    <p class="section-subtitle" style="margin-bottom: 2rem;">
+                        12 concorrentes. 5 dias. Uma mansão de luxo onde cada jogador guarda um segredo.
+                    </p>
+                        
+                    <div class="tabs-header">
+                        <button class="tab-button active">📝 FASE 2</button>
+                        <button class="tab-button">📋 INFOS</button>
+                    </div>
+
+                    <!-- TAB FASE 2 - FORMULÁRIO -->
+                    <div class="tab-content active">
+                            <h3>📝 Formulário Fase 2 - Confirmação de Personalidade</h3>
+                            <div style="background: rgba(255, 0, 255, 0.05); border: 2px solid var(--cor-neon-magenta); border-radius: 15px; padding: 1rem; margin-bottom: 2rem;">
+                                <p style="color: var(--cor-texto-secundario); text-align: center;">
+                                    Esta é uma fase mais íntima do processo. As perguntas desta seção revelam o teu lado mais autêntico e pessoal.
+                                </p>
+                            </div>
+                            
+                            <div class="form-container" style="margin: 0 auto; max-width: 800px;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progressFillTab"></div>
+                                </div>
+                                
+                                <form id="fase2FormTab">
+                                    <!-- PASSO 1 -->
+                                    <div id="step1Tab" class="form-step active">
+                                        <h3>PASSO 1/7: INFORMAÇÕES BÁSICAS</h3>
+                                        <div class="form-group">
+                                            <label for="nomeTab">ID-DISCORD</label>
+                                            <input type="text" id="nomeTab" name="nome" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="alcunhaTab">Alcunha (como queiras ser chamado)</label>
+                                            <input type="text" id="alcunhaTab" name="alcunha" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="emailTab">Email (opcional)</label>
+                                            <input type="email" id="emailTab" name="email">
+                                        </div>
+                                        <div class="form-navigation">
+                                            <span></span>
+                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- PASSO 2 -->
+                                    <div id="step2Tab" class="form-step">
+                                        <h3>PASSO 2/7: VERGONHAS E MOMENTOS EMBARAÇOSOS</h3>
+                                        <div class="form-group">
+                                            <label for="perg_1Tab">1. Qual é a maior vergonha que já apanhaste em público?</label>
+                                            <textarea id="perg_1Tab" name="perg_1" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_2Tab">2. Qual foi o momento mais parvo que já viveste durante uma festa?</label>
+                                            <textarea id="perg_2Tab" name="perg_2" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_3Tab">3. Que hábito esquisito tens quando estás sozinho?</label>
+                                            <textarea id="perg_3Tab" name="perg_3" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-navigation">
+                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
+                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- PASSO 3 -->
+                                    <div id="step3Tab" class="form-step">
+                                        <h3>PASSO 3/7: INVENÇÕES E ASNEIRAS</h3>
+                                        <div class="form-group">
+                                            <label for="perg_4Tab">4. Se pudesses inventar uma lei absurda, qual seria?</label>
+                                            <textarea id="perg_4Tab" name="perg_4" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_5Tab">5. Já cometeste alguma asneira por engano nas redes sociais? Conta!</label>
+                                            <textarea id="perg_5Tab" name="perg_5" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_6Tab">6. Qual seria o teu superpoder inútil ideal?</label>
+                                            <textarea id="perg_6Tab" name="perg_6" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-navigation">
+                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
+                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- PASSO 4 -->
+                                    <div id="step4Tab" class="form-step">
+                                        <h3>PASSO 4/7: HUMOR E PREFERÊNCIAS</h3>
+                                        <div class="form-group">
+                                            <label for="perg_7Tab">7. Qual é o teu humor mais incómodo de aguentar em convívios?</label>
+                                            <textarea id="perg_7Tab" name="perg_7" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_8Tab">8. Se fosses obrigado a comer só uma comida para o resto da vida, o que escolherrías?</label>
+                                            <textarea id="perg_8Tab" name="perg_8" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_9Tab">9. Que género de música te envergonha mais admitir que gostas?</label>
+                                            <textarea id="perg_9Tab" name="perg_9" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-navigation">
+                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
+                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- PASSO 5 -->
+                                    <div id="step5Tab" class="form-step">
+                                        <h3>PASSO 5/7: CONFISSÕES E MEDOS</h3>
+                                        <div class="form-group">
+                                            <label for="perg_10Tab">10. Qual é o teu maior medo ridículo?</label>
+                                            <textarea id="perg_10Tab" name="perg_10" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_11Tab">11. O que seria pior para ti: tergromper em público ou dizer algo embaraçoso?</label>
+                                            <textarea id="perg_11Tab" name="perg_11" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_12Tab">12. Já choraste num beco vendo um filme/anime/série que 'não deveria' te comover?</label>
+                                            <textarea id="perg_12Tab" name="perg_12" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-navigation">
+                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
+                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- PASSO 6 -->
+                                    <div id="step6Tab" class="form-step">
+                                        <h3>PASSO 6/7: CURTURAS E PESSOAL</h3>
+                                        <div class="form-group">
+                                            <label for="perg_13Tab">13. Há alguma palavra que costuas pronunciar mal ou trocas sempre?</label>
+                                            <textarea id="perg_13Tab" name="perg_13" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_14Tab">14. Que canto esquisito tens do teu corpo?</label>
+                                            <textarea id="perg_14Tab" name="perg_14" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_15Tab">15. Se tivesses que ser sequêned em memória à posteridade, preus embaraçonho?</label>
+                                            <textarea id="perg_15Tab" name="perg_15" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_16Tab">16. Comês algo peculiar/horroroso que mais ninguém gosta?</label>
+                                            <textarea id="perg_16Tab" name="perg_16" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_17Tab">17. Há alguma palavra que costumas pronunciar mal ou trocas sempre?</label>
+                                            <textarea id="perg_17Tab" name="perg_17" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-navigation">
+                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
+                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- PASSO 7 -->
+                                    <div id="step7Tab" class="form-step">
+                                        <h3>PASSO 7/8: CONTATOS E CESSAÇÃO (OPCIONAL)</h3>
+                                        <div class="form-group">
+                                            <label for="visita_amigo">Tens algum amigo/familiar que queiras que te visite? (opcional)</label>
+                                            <textarea id="visita_amigo" name="visita_amigo" rows="4"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="discord_amigo">Indica ID DISCORD do teu amigo/familiar (opcional)</label>
+                                            <input type="text" id="discord_amigo" name="discord_amigo">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="telefone">Contacto telefónico (IC - opcional)</label>
+                                            <input type="text" id="telefone" name="telefone">
+                                        </div>
+                                        <div class="form-navigation">
+                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
+                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- PASSO 8 -->
+                                    <div id="step8Tab" class="form-step">
+                                        <h3>PASSO 8/8: MARCAÇÃO DE ENTREVISTA</h3>
+                                        <div style="background: rgba(0, 212, 255, 0.1); border: 2px solid var(--cor-neon-ciano); border-radius: 15px; padding: 1.5rem; margin-bottom: 2rem;">
+                                            <h4 style="color: var(--cor-neon-ciano); margin-bottom: 1rem; text-align: center;">📅 Marcação de Entrevista Final</h4>
+                                            <p style="color: var(--cor-texto-secundario); text-align: center; margin-bottom: 0;">
+                                                Parabéns! Chegaste à fase final. Agora vamos marcar a tua entrevista para finalizar o processo de seleção.
+                                            </p>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="data_entrevista">Escolhe a data disponível para a tua entrevista:</label>
+                                            <select id="data_entrevista" name="data_entrevista" required>
+                                                <option value="">-- Seleciona uma data --</option>
+                                                <option value="27-09">27 de Setembro</option>
+                                                <option value="28-09">28 de Setembro</option>
+                                                <option value="30-09">30 de Setembro</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="horario_entrevista">Qual o melhor horário para ti? (entre as 10h-23h)</label>
+                                            <input type="text" id="horario_entrevista" name="horario_entrevista" 
+                                                   placeholder="Ex: 14h30, 20h00, 16h45..." 
+                                                   required>
+                                            <small style="color: var(--cor-texto-secundario); font-size: 0.9rem; margin-top: 0.5rem; display: block;">
+                                                💡 Indica o horário no formato que preferires (ex: 14h30, 20:00, 16h45)
+                                            </small>
+                                        </div>
+                                        
+                                        <div class="form-navigation">
+                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
+                                            <button type="submit" class="btn btn-primary">Finalizar Candidatura</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- TAB INFOS DETALHADO -->
+                        <div class="tab-content">
+                            <h3>📋 Manual Detalhado - Informações do Jogo</h3>
+                            
+                            <div class="faq-item">
+                                <h4 class="faq-title" onclick="toggleFAQ(this)">🏠 A Casa do Enigma - Localização e Capacidade</h4>
+                                <div class="faq-content">
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    A Casa do Enigma está localizada na área privilegiada de <strong>Grapeseed</strong>, uma localização estratégica 
+                                    que proporciona tanto privacidade quanto facilidade de acesso. Esta mansão de luxo foi especificamente 
+                                    selecionada para acolher os 12 concorrentes durante os 5 dias intensivos do reality show.
+                                </p>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    Com uma arquitectura distintiva, a casa oferece múltiplas zonas de interação e privacidade, 
+                                    permitindo que os concorrentes possam coexistir durante um período intenso de gravação, 
+                                    mantendo as relações interpessoais como parte fundamental da narrativa do programa.
+                                </p>
+                                
+                                <h5 style="color: var(--cor-neon-ciano); margin-bottom: 1rem;">🏛️ Áreas Exteriores da Mansão</h5>
+                                <p style="margin-bottom: 1rem; line-height: 1.6;">
+                                    As áreas exteriores funcionam como extensões naturais da ação, incluindo uma <strong>piscina de luxo 
+                                    aquecida</strong> que serve como cenário para momentos de relaxamento, desafios aquáticos e socialização. 
+                                    O <strong>heliporto privado</strong> garante transportes exclusivos quando necessário, enquanto o 
+                                    <strong>minibar</strong> cria um ambiente social dinâmico para interações entre concorrentes.
+                                </p>
+                                
+                                <h5 style="color: var(--cor-neon-magenta); margin-bottom: 1rem;">🏠 Áreas Interiores - Comunhão e Individualidade</h5>
+                                <p style="margin-bottom: 1rem; line-height: 1.6;">
+                                    O interior da casa foi concebido para equilibrar convivência e privacidade. Os <strong>quartos privados</strong> 
+                                    oferecem refúgio individual aos concorrentes durante períodos de descanso, enquanto a <strong>sala principal 
+                                    espaçosa</strong> funciona como centro nervoso onde ocorrem as principais confrontações e celebrações. 
+                                    A <strong>cozinha compartilhada</strong> promove interação através da preparação de refeições, e o 
+                                    <strong>confessionário</strong> proporciona um ambiente íntimo onde os concorrentes revelam estratégias e emoções.
+                                </p>
+                                
+                                <h5 style="color: var(--cor-neon-ciano); margin-bottom: 1rem;">🎯 Áreas Especiais de Competição</h5>
+                                <p style="margin-bottom: 1rem; line-height: 1.6;">
+                                    As <strong>arenas de provas</strong> são o palco onde os desafios ganham vida, com equipamentos técnicos 
+                                    avançados para suportar qualquer tipo de prova imaginável. A <strong>despensa</strong> 
+                                    aumenta a tensão estratégica, escondendo recursos valiosos que influenciam o jogo.
+                                </p>
+                            </div>
+
+                            <div class="faq-item">
+                                <h4 class="faq-title" onclick="toggleFAQ(this)">👑 Figuras Especiais - Liderança e Sabotagem Estratégica</h4>
+                                <div class="faq-content">
+                                
+                                <h5 style="color: var(--cor-neon-ciano); margin-bottom: 1rem;">👑 Líder da Casa - Poder Temporário Mas Influente</h5>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    O Líder da Casa é <strong>eleito democraticamente durante cada Gala</strong> às 21h, criando 
+                                    uma dinâmica de poder transitório que influencia toda a estratégia de grupo. Como figura de 
+                                    coordenação, o líder é responsável por organizar tarefas da casa, coordenar estratégias colectivas 
+                                    e liderar durante momentos de tensão. Este poder temporário cria alianças e favores políticos que 
+                                    alteram fundamentalmente as relações entre concorrentes.
+                                </p>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    Esta função não é apenas cerimonial - decisões estratégicas de grupo assim como coordenação de 
+                                    recursos (acessos especiais, facilidades da casa) ficam dependentes da liderança competente desta figura.
+                                </p>
+                                
+                                <h5 style="color: var(--cor-neon-magenta); margin-bottom: 1rem;">🕵️ O Infiltrado - O Engano Perfeito</h5>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    O Infiltrado ocupa talvez a função mais complexa dentro do jogo. Como <strong>jogador secreto</strong> 
+                                    conhecido apenas pela produção, este concorrente possui um <strong>falso segredo elaborado</strong> 
+                                    que deve defender com a mesma seriedade dos segredos reais dos outros 11 concorrentes.
+                                </p>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    Simultaneamente, recebe <strong>missões estratégicas de sabotagem</strong> específicas da produção 
+                                    que devem ser executadas de forma consciencial - sem nunca revelar o papel de infiltrado - criando um 
+                                    nível de tensão adicional e oportunidades de desenvolvimento dramático que separa bons infiltrados 
+                                    dos fracassados.                                     A desestabilização das estratégias que alcança influencia significativamente 
+                                    os resultados finais do jogo.
+                                </p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <h4 class="faq-title" onclick="toggleFAQ(this)">💎 Sistema de Jogo Cardíaco - Enigma Coins, Confrontos e Votações</h4>
+                                <div class="faq-content">
+                                
+                                <h5 style="color: var(--cor-neon-ciano); margin-bottom: 1rem;">💰 Sistema Enigma Coins - Economia do Reality</h5>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    Os <strong>Enigma Coins</strong> servem como moeda vital do universo reality transformando 
+                                    cada decisão numa batalha estratégica. Ganha-se coins através de <strong>sucesso em provas</strong>, 
+                                    <strong>apostas estratégicas calculadas entre concorrentes</strong>, e conquista de objectivos individuais 
+                                    específicos determinados pelo desenvolvimento das narrativas.                                     A gestão inteligente desta circulação 
+                                    monetária virtual influencia profundamente alianças, antagonismos e traça as marcas decisões futuras.
+                                </p>
+                                
+                                <h5 style="color: var(--cor-neon-magenta); margin-bottom: 1rem;">⚔️ Sistema de Confrontos - Aposta Tudo ou Segura Diferença</h5>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    Os <strong>Confrontos diretos</strong> representam momentos de máxima tensão onde se aposta literalmente 
+                                    no jogo. Um concorrente pode tentar adivinhar o segredo guardado de outro - se acertar recebe 
+                                    <strong>50% do valor total dos coins acumulados pelo alvo até àquele momento do jogo</strong>, mas se errar 
+                                    <strong>perde todo o seu património de Enigma Coins acumulado até àquele instante</strong>, sendo o valor 
+                                    transferido integralmente para o jogador que pediu o esclarecimento.
+                                </p>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    Estes confrontos criam situações extremas de nervos e grandes oportunidades ou grandes 
+                                    derrotas devastantes que impactam todo o resto do percurso do jogo. 
+                                </p>
+                                
+                                <h5 style="color: var(--cor-neon-ciano); margin-bottom: 1rem;">🗳️ Sistema Votação Publica - Democracia Direta do Reality</h5>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    O <strong>público participativo actua como deus invisível através da Twitch</strong>, determinando 
+                                    eliminações através das suas votações sensíveis e influenciantes sobre o andamento do programa.                                     Durante 
+                                    as <strong>Galas às 21h</strong> definem-se <strong>Marcações</strong> para eliminação, o público usando múltiplas 
+                                    plataformas da experiência decide quem sai, quem avança, e finalmente no último dia vota por quem 
+                                    ganha a competição inteira - uma <strong>final democrática e apoiada pela participação da audiência</strong>.
+                                </p>
+                                
+                                <h5 style="color: var(--cor-neon-magenta); margin-bottom: 1rem;">🎮 Mecânicas de Participação Forçada</h5>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    As provas ativas só se ativam com <strong>mínimo absoluto 4 jogadores online simultaneamente</strong>, 
+                                    obrigando participação estratégica. Cada concorrente assina um compromisso de participação 
+                                    <strong>mínimo 2 provas por dia através de todos os 5 dias de jogo</strong> - a falha 
+                                    deste mínimo resulta em eliminação automática direta irreversível e definitiva. Estas mecânicas garantem 
+                                    envolvimento constante através do período de acumulação sem que os jogadores possam actuar como 
+                                    espectadores passivos.
+                                </p>
+                                </div>
+                            </div>
+
+                            <!-- SECÇÃO DE REGRAS ADICIONADA -->
+                            <div class="faq-item">
+                                <h4 class="faq-title" onclick="toggleFAQ(this)">🔒 Controlo Total sobre Segredos - Proibição de Auto-Revelação</h4>
+                                <div class="faq-content">
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    O conceito fundamental do ENIGMA centra-se na <strong>proibição total de revelação própria do segredo pessoal</strong>. 
+                                    Nenhum concorrente jamais poderá divulgar diretamente, por palavras, ações ou dicas, qual é o seu 
+                                    segredo pessoal. A descoberta deve acontecer única e exclusivamente através de <strong>deduções 
+                                    inteligentes pelos outros concorrentes</strong>, baseadas em pistas indiretas, padrões comportamentais 
+                                    observados ou provas superadas sem revelação direta.
+                                </p>
+                                
+                                <h5 style="color: var(--cor-neon-ciano); margin-bottom: 1rem;">📞 Isolamento Forçado de Comunicações Externas</h5>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    Durante todos os 5 dias de participação está <strong>proibida qualquer comunicação 
+                                    com o mundo exterior</strong>, exceto contato com a equipa de produção. Não é permitido o uso de smartphones pessoais, 
+                                    redes sociais ou qualquer comunicação direta com familiares, amigos ou outras pessoas do 
+                                    exterior. Este isolamento garante o foco total no reality show, eliminando influências 
+                                    externas que possam manipular ou afetar a autenticidade natural das relações interpessoais.
+                                </p>
+                                
+                                <h5 style="color: var(--cor-neon-magenta); margin-bottom: 1rem;">🎙️ Discord Oficial e Presença Áudio Obrigatória</h5>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    O <strong>servidor Discord "Enigma Xperience"</strong> é a única plataforma permitida para 
+                                    comunicação interna entre concorrentes durante períodos não transmitidos. A presença áudio é 
+                                    <strong>obrigatória durante todas as Galas às 21h</strong>, incluindo discussões estratégicas e 
+                                    momentos de tensão. A falta de presença nas galas resulta em marcação automática para eliminação. Esta presença áudio 
+                                    garante comunicação transparente entre todos os participantes, não permitindo participação silenciosa ou oculta.
+                                </p>
+                                
+                                <h5 style="color: var(--cor-neon-ciano); margin-bottom: 1rem;">⚖️ Verdade Absoluta na Sala Confessionário</h5>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    No espaço confessionário é proibido qualquer forma de mentira ou ocultação de informações importantes. 
+                                    Os concorrentes devem revelar emoções verdadeiras, confessar estratégias e processos mentais 
+                                    durante o jogo e proporcionar reflexões genuínas sobre a situação posterior. 
+                                    Mentir no confessionário resulta em expulsão imediata, prejudicando gravemente a credibilidade 
+                                    e a integridade de todo o desenvolvimento narrativo da estratégia.
+                                </p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <h4 class="faq-title" onclick="toggleFAQ(this)">🚪 Sistema Expulsivo - Consequências Irreversíveis de Infrações</h4>
+                                <div class="faq-content">
+                                
+                                <h5 style="color: var(--cor-erro); margin-bottom: 1rem;">❌ Violações Automaticamente Eliminatórias</h5>
+                                
+                                <div style="background: rgba(255,100,100,0.1); padding: 1.5rem; border-radius: 15px; margin-bottom: 1.5rem;">
+                                    <h5 style="color: var(--cor-erro); margin-bottom: 1rem;">🔥 Provas Mínimas - Falha Imediata resulta em Expulsão</h5>
+                                    <p style="margin-bottom: 1rem; line-height: 1.6;">
+                                        O incumprimento da regra básica de participação mínima em 2 provas diárias resulta em expulsão imediata, 
+                                        independentemente do estatuto, ranking ou popularidade alcançados. Nesta situação credível tolerância zero 
+                                        estabelece maior importância na disciplina do reality signalizada pela regulamentação rigorosa e responsabilização.
+                                    </p>
+                                    
+                                    <h5 style="color: var(--cor-erro); margin-bottom: 1rem;">🕘 Presença Obrigatória na Gala - 21h Mandatório</h5>
+                                    <p style="margin-bottom: 1rem; line-height: 1.6;">
+                                        A ausência nas galas às 21h resulta em expulsão automática sem quaisquer excepções, independentemente 
+                                        de emergências técnicas, avarias, interrupções de contato ou problemas de saúde familiar. 
+                                        Não são tolerados parâmetros proibidos de manipulação estratégica ou desobediência voluntária 
+                                        às regras, resultando dramaticamente em eliminação consequente pelo controlo rigoroso e aplicação sistemática.
+                                    </p>
+                                    
+                                    <h5 style="color: var(--cor-erro); margin-bottom: 1rem;">💀 Discurso de Ódio e Agressão - Tolerância Zero</h5>
+                                    <p style="margin-bottom: 1rem; line-height: 1.6;">
+                                        Qualquer forma de discurso de ódio, agressão verbal ou física direcionada contra outros concorrentes 
+                                        resulta em eliminação imediata. Esta violação é um limite absoluto que não pode ser negociado, 
+                                        mantendo posturas civilizadas de interação geral e respeito mútuo, onde níveis de tolerância 
+                                        não podem ser discutidos sob qualquer perspectiva.
+                                    </p>
+                                </div>
+
+                                <h5 style="color: var(--cor-neon-magenta); margin-bottom: 1rem;">✅ Responsabilidades de Compromisso e Dedicação Mútua</h5>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    O contrato participativo exige disponibilidade integral para os 5 dias completos, facto que produz 
+                                    requisitos impossíveis de conciliar. Os candidatos devem estar fisicamente livres de 
+                                    compromissos externos, familiares 
+                                    e pessoais de qualquer natureza, num ambiente propício ao trabalho de equipa orientado 
+                                    para uma metodologia de programa holística com garantia profissional assegurada e expectativa 
+                                    de satisfação da audiência online através desta experiência extraordinária com metas 
+                                    específicas compreendidas, apreciação relacional, tensão prolongada e suspense 
+                                    além das expectativas normais do público.
+                                </p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <h4 class="faq-title" onclick="toggleFAQ(this)">📺 Requisitos Técnicos - Streaming e Transmissão</h4>
+                                <div class="faq-content">
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    O <strong>Discord oficial "Enigma Xperience" serve integralmente como hub de comunicação principal</strong>, 
+                                    reforçando participação obrigatória, presença e requisitos de encontros anteriores orientados 
+                                    para a consistência total nas galas através de sistema avançado de voz combinado com tecnologia de streaming vídeo.
+                                </p>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    O <strong>streaming simultâneo é encorajado diretamente aos concorrentes independentemente</strong>, oferecendo 
+                                    múltiplos pontos de vista de perspectivas diferentes emergindo, do triplo de visualização a percepções 
+                                    vastamente ricas, enriquecendo a experiência de visualização ordinária disponibilizando fluxo principal alternativo do canal oficial.
+                                </p>
+                                <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                                    Todo o conteúdo gravado torna-se propriedade instantânea da Enigma Xperience formando material original 
+                                    destinado à criação de série exclusiva para publicação na Enigma Play para expansão da marca mediática 
+                                    com dedicação na publicidade.
+                                </p>
+                                </div>
+                            </div>
+
+                            <!-- CALENDÁRIO DINÂMICO INTEGRADO -->
+                            <div class="faq-item">
+                                <h4 class="faq-title" onclick="toggleFAQ(this)">📅 Calendário Dinâmico - Eventos e Provas</h4>
+                                <div class="faq-content">
+                                    <div class="calendar-container">
+                                        <!-- Controles de navegação -->
+                                        <div class="calendar-navigation">
+                                            <button onclick="previousWeekFase2()" class="btn btn-secondary" style="padding: 0.8rem 1.5rem; font-size: 0.9rem;">◄ Semana Anterior</button>
+                                            <div id="calendarWeekDisplayFase2" class="calendar-week-display">Carregando...</div>
+                                            <button onclick="nextWeekFase2()" class="btn btn-secondary" style="padding: 0.8rem 1.5rem; font-size: 0.9rem;">Próxima Semana ►</button>
+                                        </div>
+                                        
+                                        <!-- Calendário semanal -->
+                                        <div id="weeklyCalendarFase2" class="calendar-grid">
+                                            <!-- Será preenchido dinamicamente -->
+                                        </div>
+                                        
+                                        <!-- Botão de atualizar -->
+                                        <div style="text-align: center;">
+                                            <button onclick="refreshCalendarFase2()" class="btn btn-primary" style="padding: 1rem 2rem;">
+                                                🔄 Atualizar Calendário
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Informações adicionais -->
+                                        <div class="calendar-info">
+                                            <h5>ℹ️ Informações do Calendário</h5>
+                                            <div class="calendar-info-grid">
+                                                <div class="calendar-info-item">
+                                                    <h6>📅 Eventos</h6>
+                                                    <p style="color: var(--cor-texto-secundario); font-size: 0.9rem;">Galas, visitas e eventos especiais programados</p>
+                                                </div>
+                                                <div class="calendar-info-item prova-ativa">
+                                                    <h6>🎯 Provas Ativas</h6>
+                                                    <p style="color: var(--cor-texto-secundario); font-size: 0.9rem;">Desafios e provas em andamento</p>
+                                                </div>
+                                                <div class="calendar-info-item prova-inativa">
+                                                    <h6>🎯 Provas Inativas</h6>
+                                                    <p style="color: var(--cor-texto-secundario); font-size: 0.9rem;">Provas programadas mas não ativas</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+            </section>
+        </div>
+    </main>
+</body>
+</html>
