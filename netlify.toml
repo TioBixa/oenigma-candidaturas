@@ -3,6 +3,11 @@
 
 [[redirects]]
   from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/enigma"
   to = "/enigma.html"
   status = 200
 
