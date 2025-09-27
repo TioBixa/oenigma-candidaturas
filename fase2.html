@@ -1592,175 +1592,182 @@ ${event.descricao ? `📝 Descrição: ${event.descricao}` : ''}
                         <button class="tab-button">📋 INFOS</button>
                     </div>
 
-                    <!-- TAB FASE 2 - FORMULÁRIO -->
-                    <div class="tab-content active">
-                            <h3>📝 Formulário Fase 2 - Confirmação de Personalidade</h3>
-                            <div style="background: rgba(255, 0, 255, 0.05); border: 2px solid var(--cor-neon-magenta); border-radius: 15px; padding: 1rem; margin-bottom: 2rem;">
-                                <p style="color: var(--cor-texto-secundario); text-align: center;">
-                                    Esta é uma fase mais íntima do processo. As perguntas desta seção revelam o teu lado mais autêntico e pessoal.
-                                </p>
-                            </div>
-                            
-                            <div class="form-container" style="margin: 0 auto; max-width: 800px;">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" id="progressFillTab"></div>
-                                </div>
-                                
-                                <form id="fase2FormTab">
-                                    <!-- PASSO 1 -->
-                                    <div id="step1Tab" class="form-step active">
-                                        <h3>PASSO 1/7: INFORMAÇÕES BÁSICAS</h3>
-                                        <div class="form-group">
-                                            <label for="nomeTab">ID-DISCORD</label>
-                                            <input type="text" id="nomeTab" name="nome" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="alcunhaTab">Alcunha (como queiras ser chamado)</label>
-                                            <input type="text" id="alcunhaTab" name="alcunha" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="emailTab">Email (opcional)</label>
-                                            <input type="email" id="emailTab" name="email">
-                                        </div>
-                                        <div class="form-navigation">
-                                            <span></span>
-                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
-                                        </div>
-                                    </div>
-
-                                    <!-- PASSO 2 -->
-                                    <div id="step2Tab" class="form-step">
-                                        <h3>PASSO 2/7: VERGONHAS E MOMENTOS EMBARAÇOSOS</h3>
-                                        <div class="form-group">
-                                            <label for="perg_1Tab">1. Qual é a maior vergonha que já apanhaste em público?</label>
-                                            <textarea id="perg_1Tab" name="perg_1" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="perg_2Tab">2. Qual foi o momento mais parvo que já viveste durante uma festa?</label>
-                                            <textarea id="perg_2Tab" name="perg_2" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="perg_3Tab">3. Que hábito esquisito tens quando estás sozinho?</label>
-                                            <textarea id="perg_3Tab" name="perg_3" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-navigation">
-                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
-                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
-                                        </div>
-                                    </div>
-
-                                    <!-- PASSO 3 -->
-                                    <div id="step3Tab" class="form-step">
-                                        <h3>PASSO 3/7: INVENÇÕES E ASNEIRAS</h3>
-                                        <div class="form-group">
-                                            <label for="perg_4Tab">4. Se pudesses inventar uma lei absurda, qual seria?</label>
-                                            <textarea id="perg_4Tab" name="perg_4" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="perg_5Tab">5. Já cometeste alguma asneira por engano nas redes sociais? Conta!</label>
-                                            <textarea id="perg_5Tab" name="perg_5" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="perg_6Tab">6. Qual seria o teu superpoder inútil ideal?</label>
-                                            <textarea id="perg_6Tab" name="perg_6" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-navigation">
-                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
-                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
-                                        </div>
-                                    </div>
-
-                                    <!-- PASSO 4 -->
-                                    <div id="step4Tab" class="form-step">
-                                        <h3>PASSO 4/7: HUMOR E PREFERÊNCIAS</h3>
-                                        <div class="form-group">
-                                            <label for="perg_7Tab">7. Qual é o teu humor mais incómodo de aguentar em convívios?</label>
-                                            <textarea id="perg_7Tab" name="perg_7" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="perg_8Tab">8. Se fosses obrigado a comer só uma comida para o resto da vida, o que escolherrías?</label>
-                                            <textarea id="perg_8Tab" name="perg_8" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="perg_9Tab">9. Que género de música te envergonha mais admitir que gostas?</label>
-                                            <textarea id="perg_9Tab" name="perg_9" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-navigation">
-                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
-                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
-                                        </div>
-                                    </div>
-
-                                    <!-- PASSO 5 -->
-                                    <div id="step5Tab" class="form-step">
-                                        <h3>PASSO 5/7: CONFISSÕES E MEDOS</h3>
-                                        <div class="form-group">
-                                            <label for="perg_10Tab">10. Qual é o teu maior medo ridículo?</label>
-                                            <textarea id="perg_10Tab" name="perg_10" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="perg_11Tab">11. O que seria pior para ti: tergromper em público ou dizer algo embaraçoso?</label>
-                                            <textarea id="perg_11Tab" name="perg_11" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="perg_12Tab">12. Já choraste num beco vendo um filme/anime/série que 'não deveria' te comover?</label>
-                                            <textarea id="perg_12Tab" name="perg_12" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-navigation">
-                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
-                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
-                                        </div>
-                                    </div>
-
-                                    <!-- PASSO 6 -->
-                                    <div id="step6Tab" class="form-step">
-                                        <h3>PASSO 6/7: CURTURAS E PESSOAL</h3>
-                                        <div class="form-group">
-                                            <label for="perg_13Tab">13. Há alguma palavra que costuas pronunciar mal ou trocas sempre?</label>
-                                            <textarea id="perg_13Tab" name="perg_13" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="perg_14Tab">14. Que canto esquisito tens do teu corpo?</label>
-                                            <textarea id="perg_14Tab" name="perg_14" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="perg_15Tab">15. Se tivesses que ser sequêned em memória à posteridade, preus embaraçonho?</label>
-                                            <textarea id="perg_15Tab" name="perg_15" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="perg_16Tab">16. Comês algo peculiar/horroroso que mais ninguém gosta?</label>
-                                            <textarea id="perg_16Tab" name="perg_16" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="perg_17Tab">17. Há alguma palavra que costumas pronunciar mal ou trocas sempre?</label>
-                                            <textarea id="perg_17Tab" name="perg_17" rows="4" required></textarea>
-                                        </div>
-                                        <div class="form-navigation">
-                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
-                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
-                                        </div>
-                                    </div>
-
-                                    <!-- PASSO 7 -->
-                                    <div id="step7Tab" class="form-step">
-                                        <h3>PASSO 7/8: CONTATOS E CESSAÇÃO (OPCIONAL)</h3>
-                                        <div class="form-group">
-                                            <label for="visita_amigo">Tens algum amigo/familiar que queiras que te visite? (opcional)</label>
-                                            <textarea id="visita_amigo" name="visita_amigo" rows="4"></textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="discord_amigo">Indica ID DISCORD do teu amigo/familiar (opcional)</label>
-                                            <input type="text" id="discord_amigo" name="discord_amigo">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="telefone">Contacto telefónico (IC - opcional)</label>
-                                            <input type="text" id="telefone" name="telefone">
-                                        </div>
-                                        <div class="form-navigation">
-                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
-                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
-                                        </div>
-                                    </div>
+                        <!-- TAB FASE 2 - FORMULÁRIO -->
+                        <div class="tab-content active">
+                            <h3>📝 Formulário Fase 2 - Confirmação de Personalidade</h3>
+                            <div style="background: rgba(255, 0, 255, 0.05); border: 2px solid var(--cor-neon-magenta); border-radius: 15px; padding: 1rem; margin-bottom: 2rem;">
+                                <p style="color: var(--cor-texto-secundario); text-align: center;">
+                                    Esta é uma fase mais íntima do processo. As perguntas desta secção revelam o teu lado mais autêntico e pessoal.
+                                </p>
+                            </div>
+                            
+                            <div class="form-container" style="margin: 0 auto; max-width: 800px;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progressFillTab"></div>
+                                </div>
+                                
+                                <form id="fase2FormTab">
+                                    <!-- PASSO 1 -->
+                                    <div id="step1Tab" class="form-step active">
+                                        <h3>PASSO 1/7: INFORMAÇÕES BÁSICAS</h3>
+                                        <div class="form-group">
+                                            <label for="nomeTab">ID DISCORD</label>
+                                            <input type="text" id="nomeTab" name="nome" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="alcunhaTab">Alcunha (como preferes ser chamado)</label>
+                                            <input type="text" id="alcunhaTab" name="alcunha" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="emailTab">Email (opcional)</label>
+                                            <input type="email" id="emailTab" name="email">
+                                        </div>
+                                        <div class="form-navigation">
+                                            <span></span>
+                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
+                                        </div>
+                                    </div>
+                    
+                    
+                                    <!-- PASSO 2 -->
+                                    <div id="step2Tab" class="form-step">
+                                        <h3>PASSO 2/7: VERGONHAS E MOMENTOS EMBARAÇOSOS</h3>
+                                        <div class="form-group">
+                                            <label for="perg_1Tab">1. Qual foi a maior vergonha que já apanhaste em público?</label>
+                                            <textarea id="perg_1Tab" name="perg_1" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_2Tab">2. Qual foi o momento mais parvo que já viveste numa festa?</label>
+                                            <textarea id="perg_2Tab" name="perg_2" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_3Tab">3. Que hábito estranho tens quando estás sozinho?</label>
+                                            <textarea id="perg_3Tab" name="perg_3" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-navigation">
+                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
+                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
+                                        </div>
+                                    </div>
+                    
+                    
+                                    <!-- PASSO 3 -->
+                                    <div id="step3Tab" class="form-step">
+                                        <h3>PASSO 3/7: INVENÇÕES E ASNEIRAS</h3>
+                                        <div class="form-group">
+                                            <label for="perg_4Tab">4. Se pudesses inventar uma lei absurda, qual seria?</label>
+                                            <textarea id="perg_4Tab" name="perg_4" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_5Tab">5. Já cometeste alguma asneira sem querer nas redes sociais? Conta!</label>
+                                            <textarea id="perg_5Tab" name="perg_5" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_6Tab">6. Qual seria o teu superpoder inútil ideal?</label>
+                                            <textarea id="perg_6Tab" name="perg_6" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-navigation">
+                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
+                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
+                                        </div>
+                                    </div>
+                    
+                    
+                                    <!-- PASSO 4 -->
+                                    <div id="step4Tab" class="form-step">
+                                        <h3>PASSO 4/7: HUMOR E PREFERÊNCIAS</h3>
+                                        <div class="form-group">
+                                            <label for="perg_7Tab">7. Qual é o tipo de humor mais incómodo para ti em convívios?</label>
+                                            <textarea id="perg_7Tab" name="perg_7" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_8Tab">8. Se fosses obrigado a comer apenas uma comida para o resto da vida, qual escolhias?</label>
+                                            <textarea id="perg_8Tab" name="perg_8" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_9Tab">9. Que género musical te envergonha mais admitir que gostas?</label>
+                                            <textarea id="perg_9Tab" name="perg_9" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-navigation">
+                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
+                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
+                                        </div>
+                                    </div>
+                    
+                    
+                                    <!-- PASSO 5 -->
+                                    <div id="step5Tab" class="form-step">
+                                        <h3>PASSO 5/7: CONFISSÕES E MEDOS</h3>
+                                        <div class="form-group">
+                                            <label for="perg_10Tab">10. Qual é o teu maior medo ridículo?</label>
+                                            <textarea id="perg_10Tab" name="perg_10" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_11Tab">11. O que seria pior para ti: tropeçares em público ou dizeres algo embaraçoso?</label>
+                                            <textarea id="perg_11Tab" name="perg_11" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_12Tab">12. Já choraste sozinho(a) a ver um filme, anime ou série que 'não devia' emocionar-te?</label>
+                                            <textarea id="perg_12Tab" name="perg_12" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-navigation">
+                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
+                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
+                                        </div>
+                                    </div>
+                    
+                    
+                                    <!-- PASSO 6 -->
+                                    <div id="step6Tab" class="form-step">
+                                        <h3>PASSO 6/7: CURIOSIDADES E PESSOAL</h3>
+                                        <div class="form-group">
+                                            <label for="perg_13Tab">13. Há alguma palavra que costumam pronunciar mal ou trocas sempre?</label>
+                                            <textarea id="perg_13Tab" name="perg_13" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_14Tab">14. Que parte estranha do teu corpo tens?</label>
+                                            <textarea id="perg_14Tab" name="perg_14" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_15Tab">15. Se fosses recordado(a) para a posteridade, qual seria o teu momento mais embaraçoso?</label>
+                                            <textarea id="perg_15Tab" name="perg_15" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_16Tab">16. Comês algo estranho ou horrível que mais ninguém gosta?</label>
+                                            <textarea id="perg_16Tab" name="perg_16" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="perg_17Tab">17. Há outra palavra que costumas pronunciar mal ou trocar sempre?</label>
+                                            <textarea id="perg_17Tab" name="perg_17" rows="4" required></textarea>
+                                        </div>
+                                        <div class="form-navigation">
+                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
+                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
+                                        </div>
+                                    </div>
+                    
+                    
+                                    <!-- PASSO 7 -->
+                                    <div id="step7Tab" class="form-step">
+                                        <h3>PASSO 7/8: CONTACTOS E CESSAÇÃO (OPCIONAL)</h3>
+                                        <div class="form-group">
+                                            <label for="visita_amigo">Queres que algum amigo ou familiar te visite? (opcional)</label>
+                                            <textarea id="visita_amigo" name="visita_amigo" rows="4"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="discord_amigo">Indica o ID Discord do teu amigo/familiar (opcional)</label>
+                                            <input type="text" id="discord_amigo" name="discord_amigo">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="telefone">Contacto telefónico (IC - opcional)</label>
+                                            <input type="text" id="telefone" name="telefone">
+                                        </div>
+                                        <div class="form-navigation">
+                                            <button type="button" class="btn btn-secondary" onclick="prevStepTab()">Anterior</button>
+                                            <button type="button" class="btn btn-primary" onclick="nextStepTab()">Próximo</button>
+                                        </div>
+                                    </div>
+                    
 
                                     <!-- PASSO 8 -->
                                     <div id="step8Tab" class="form-step">
