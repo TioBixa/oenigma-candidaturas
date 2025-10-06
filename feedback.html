@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow, nosnippet, noarchive">
+    <meta name="description" content="Formulário de Feedback - O Enigma">
+    <title>O ENIGMA - Formulário de Feedback (Acesso Restrito)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Supabase SDK -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://pbzwwnhslslqozucwdia.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiend3bmhzbHNscW96dWN3ZGlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMDY1ODksImV4cCI6MjA3MDU4MjU4OX0.VhRjLzGg6LwSdoZlzugAu2lGOAYHThDPdb2Q69MSKhU';
+        
+        // Inicializar cliente Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Variáveis globais do formulário
+        let currentStep = 0; // Começa no step 0 (identificação)
+        const totalSteps = 5; // 5 secções (0: identificação + 4 secções de perguntas)
+
+        // Função para inicializar Supabase
+        async function initializeSupabase() {
+            try {
+                console.log("🔄 Iniciando Supabase...");
+                
+                if (!supabase) {
+                    throw new Error("Supabase não está disponível");
+                }
+                
+                console.log("✅ Supabase inicializado com sucesso");
+                return true;
+                
+            } catch (error) {
+                console.error("❌ Erro na inicialização do Supabase:", error);
+                return false;
+            }
+        }
+
+        // Função para carregar jogadores da base de dados
+        async function loadJogadores() {
+            try {
+                console.log("🔄 Carregando jogadores...");
+                
+                const { data: jogadores, error } = await supabase
+                    .from('jogadores')
+                    .select('id, nome')
+                    .order('nome', { ascending: true });
+                
+                if (error) throw error;
+                
+                console.log("✅ Jogadores carregados:", jogadores);
+                
+                // Preencher o dropdown
+                const selectJogador = document.getElementById('jogador_id');
+                if (selectJogador && jogadores) {
+                    // Limpar opções existentes (exceto a primeira)
+                    selectJogador.innerHTML = '<option value="">Seleciona o teu nome</option>';
+                    
+                    // Adicionar jogadores
+                    jogadores.forEach(jogador => {
+                        const option = document.createElement('option');
+                        option.value = jogador.id;
+                        option.textContent = jogador.nome;
+                        selectJogador.appendChild(option);
+                    });
+                }
+                
+                return true;
+            } catch (error) {
+                console.error("❌ Erro ao carregar jogadores:", error);
+                alert("❌ Erro ao carregar lista de jogadores. Por favor, recarrega a página.");
+                return false;
+            }
+        }
+
+        // Funções de navegação entre passos
+        function showStep(step) {
+            for (let i = 0; i <= totalSteps; i++) {
+                const stepElement = document.getElementById('step' + i);
+                if (stepElement) {
+                    stepElement.style.display = i === step ? 'block' : 'none';
+                }
+            }
+            updateProgress();
+        }
+
+        function nextStep() {
+            if (validateCurrentStep()) {
+                if (currentStep < totalSteps) {
+                    currentStep++;
+                    showStep(currentStep);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            } else {
+                alert("⛔ Por favor, preenche todos os campos obrigatórios antes de avançar.");
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                showStep(currentStep);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function updateProgress() {
+            const progressFill = document.getElementById('progressFill');
+            if (progressFill) {
+                const percentage = (currentStep / totalSteps) * 100;
+                progressFill.style.width = percentage + '%';
+            }
+        }
+
+        // Validação de campos
+        function validateField(field) {
+            if (field.hasAttribute('required') && field.value.trim() === '') {
+                field.style.borderColor = '#ff4444';
+                return false;
+            } else {
+                field.style.borderColor = '#00d4ff';
+                return true;
+            }
+        }
+
+        function validateCurrentStep() {
+            const currentStepElement = document.getElementById('step' + currentStep);
+            if (!currentStepElement) {
+                return true;
+            }
+            
+            const requiredFields = currentStepElement.querySelectorAll('input[required], textarea[required], select[required]');
+            let allValid = true;
+            
+            requiredFields.forEach(field => {
+                const isValid = validateField(field);
+                if (!isValid) {
+                    allValid = false;
+                }
+            });
+            
+            return allValid;
+        }
+
+        // Configurar validação de campos
+        function setupFieldValidation() {
+            const requiredFields = document.querySelectorAll('input[required], textarea[required], select[required]');
+            
+            requiredFields.forEach(field => {
+                field.addEventListener('blur', function() {
+                    validateField(this);
+                });
+            });
+        }
+
+        // Inicialização quando a página carregar
+        window.addEventListener('DOMContentLoaded', async function() {
+            console.log("🚀 Página de Feedback carregada");
+            
+            showStep(0);
+            setupFieldValidation();
+            
+            const supabaseReady = await initializeSupabase();
+            
+            if (supabaseReady) {
+                console.log("🚀 Supabase pronto para uso");
+                
+                // Carregar lista de jogadores
+                await loadJogadores();
+                
+                const feedbackForm = document.getElementById('feedbackForm');
+                if (feedbackForm) {
+                    feedbackForm.addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        console.log('📝 Submissão formulário de feedback');
+                        
+                        const submitBtn = this.querySelector('button[type="submit"]');
+                        submitBtn.disabled = true;
+                        submitBtn.textContent = "A enviar...";
+                        
+                        try {
+                            const formData = new FormData(feedbackForm);
+                            const data = Object.fromEntries(formData);
+                            
+                            // Adicionar metadados
+                            data.data_envio = new Date().toISOString();
+                            
+                            // Converter jogador_id para número
+                            if (data.jogador_id) {
+                                data.jogador_id = parseInt(data.jogador_id);
+                            }
+                            
+                            console.log('📤 Enviando dados:', data);
+                            
+                            const { data: result, error } = await supabase
+                                .from('feedback_concorrentes')
+                                .insert([data]);
+                            
+                            if (error) throw error;
+                            
+                            alert("✅ Feedback enviado com sucesso!\n\nObrigado pela tua honestidade e dedicação.\nO teu contributo é fundamental para o futuro do ENIGMA.\n\n- A Produção");
+                            
+                            feedbackForm.reset();
+                            currentStep = 0;
+                            showStep(0);
+                            
+                        } catch (error) {
+                            console.error('❌ Erro ao submeter feedback:', error);
+                            alert("❌ Erro ao submeter formulário. Por favor, tenta novamente.");
+                        }
+                        
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = "Enviar Feedback";
+                    });
+                }
+            }
+        });
+    </script>
+    
+    <style>
+        :root {
+            --cor-primaria: #00d4ff;
+            --cor-secundaria: #ff00ff;
+            --cor-fundo: #0a0a0a;
+            --cor-fundo-alternativo: #1a1a1a;
+            --cor-card: #1a1a2e;
+            --cor-texto: #ffffff;
+            --cor-texto-secundario: #cccccc;
+            --cor-borda: rgba(0, 212, 255, 0.2);
+            --cor-erro: #ff4444;
+            --cor-sucesso: #44ff44;
+            --cor-neon-ciano: #00d4ff;
+            --cor-neon-magenta: #ff00ff;
+            --sombra-neon: 0 0 20px rgba(0, 212, 255, 0.3);
+            --sombra-card: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --fonte-titulo: 'Orbitron', monospace;
+            --fonte-corpo: 'Inter', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--fonte-corpo);
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: var(--cor-texto);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* HEADER */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--cor-primaria);
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: var(--fonte-titulo);
+            font-size: 1.8rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, var(--cor-primaria), var(--cor-secundaria));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .back-home-btn {
+            background: linear-gradient(45deg, var(--cor-primaria), var(--cor-secundaria));
+            color: white;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .back-home-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            margin-top: 100px;
+            padding: 2rem 0 4rem;
+            min-height: 100vh;
+        }
+
+        .section-title {
+            font-family: var(--fonte-titulo);
+            font-size: 3rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--cor-primaria), var(--cor-secundaria));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            text-align: center;
+            color: var(--cor-texto-secundario);
+            margin-bottom: 1rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.8;
+        }
+
+        .intro-message {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(255, 0, 255, 0.1));
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem auto 3rem;
+            max-width: 900px;
+            text-align: center;
+            font-style: italic;
+            color: var(--cor-texto-secundario);
+            line-height: 1.8;
+        }
+
+        .intro-signature {
+            margin-top: 1.5rem;
+            font-weight: 700;
+            color: var(--cor-primaria);
+            font-style: normal;
+        }
+
+        /* FORM STYLES */
+        .form-container {
+            background: var(--cor-fundo-alternativo);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: var(--sombra-neon);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            position: relative;
+            margin: 2rem auto;
+            max-width: 900px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 212, 255, 0.2);
+            border-radius: 3px;
+            margin-bottom: 3rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
+            border-radius: 3px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .form-step {
+            display: none;
+        }
+
+        .form-step h3 {
+            font-family: var(--fonte-titulo);
+            font-size: 1.8rem;
+            color: var(--cor-primaria);
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .step-description {
+            text-align: center;
+            color: var(--cor-texto-secundario);
+            margin-bottom: 2.5rem;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            color: var(--cor-texto);
+            font-size: 1rem;
+        }
+
+        .question-number {
+            color: var(--cor-primaria);
+            font-family: var(--fonte-titulo);
+            margin-right: 0.5rem;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 1rem;
+            background: var(--cor-fundo);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            color: var(--cor-texto);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: var(--fonte-corpo);
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--cor-primaria);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-group select {
+            cursor: pointer;
+        }
+
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--cor-texto-secundario);
+        }
+
+        .form-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 3rem;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: var(--fonte-corpo);
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--cor-primaria), var(--cor-secundaria));
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--cor-primaria);
+            border: 2px solid var(--cor-primaria);
+            flex: 1;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* FOOTER */
+        .footer {
+            background: rgba(10, 10, 10, 0.95);
+            border-top: 1px solid var(--cor-primaria);
+            padding: 2rem 0;
+            text-align: center;
+            color: var(--cor-texto-secundario);
+        }
+
+        .footer p {
+            margin: 0.5rem 0;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .form-container {
+                padding: 2rem 1.5rem;
+            }
+
+            .form-navigation {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <nav class="nav-container">
+                <div class="logo">O ENIGMA</div>
+                <a href="index.html" class="back-home-btn">← Voltar ao Início</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <h1 class="section-title">FORMULÁRIO DE FEEDBACK</h1>
+            <p class="section-subtitle">Casa do Enigma - Concorrentes</p>
+            
+            <div class="intro-message">
+                <p>
+                    A tua jornada na Casa do Enigma terminou, mas a tua experiência é fundamental para o futuro do projeto. 
+                    A tua honestidade neste questionário irá ajudar-nos a refinar e a melhorar continuamente a experiência do ENIGMA. 
+                    Agradecemos a tua dedicação.
+                </p>
+                <p class="intro-signature">- A Produção</p>
+            </div>
+
+            <!-- Formulário -->
+            <div class="form-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+
+                <form id="feedbackForm">
+                    
+                    <!-- SECÇÃO 0: Identificação do Jogador -->
+                    <div class="form-step" id="step0">
+                        <h3>👤 Identificação</h3>
+                        <p class="step-description">Por favor, identifica-te para começarmos</p>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">🎮</span>
+                                Seleciona o teu nome
+                            </label>
+                            <select name="jogador_id" id="jogador_id" required>
+                                <option value="">A carregar jogadores...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep()" disabled>← Anterior</button>
+                            <button type="button" class="btn btn-primary" onclick="nextStep()">Seguinte →</button>
+                        </div>
+                    </div>
+                    
+                    <!-- SECÇÃO 1: A Experiência Geral -->
+                    <div class="form-step" id="step1">
+                        <h3>Secção 1: A Experiência Geral</h3>
+                        <p class="step-description">Ajuda-nos a compreender a tua experiência geral na Casa do Enigma</p>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">1.</span>
+                                Numa escala de 1 (Péssima) a 5 (Excelente), como classificas a tua experiência geral como concorrente do ENIGMA?
+                            </label>
+                            <select name="experiencia_geral" required>
+                                <option value="">Seleciona uma opção</option>
+                                <option value="1">1 - Péssima</option>
+                                <option value="2">2 - Má</option>
+                                <option value="3">3 - Razoável</option>
+                                <option value="4">4 - Boa</option>
+                                <option value="5">5 - Excelente</option>
+                            </select>
+                            <div class="scale-labels">
+                                <span>Péssima</span>
+                                <span>Excelente</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">2.</span>
+                                Numa escala de 1 (Nada) a 5 (Extremamente), o quão imersiva sentiste que foi a experiência de estar na Casa do Enigma?
+                            </label>
+                            <select name="imersao" required>
+                                <option value="">Seleciona uma opção</option>
+                                <option value="1">1 - Nada imersiva</option>
+                                <option value="2">2 - Pouco imersiva</option>
+                                <option value="3">3 - Moderadamente imersiva</option>
+                                <option value="4">4 - Muito imersiva</option>
+                                <option value="5">5 - Extremamente imersiva</option>
+                            </select>
+                            <div class="scale-labels">
+                                <span>Nada</span>
+                                <span>Extremamente</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">3.</span>
+                                Qual foi o teu dia favorito do programa e porquê?
+                            </label>
+                            <textarea name="dia_favorito" required placeholder="Descreve o dia e explica o que o tornou especial para ti..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">4.</span>
+                                Qual foi o teu dia menos favorito e porquê?
+                            </label>
+                            <textarea name="dia_menos_favorito" required placeholder="Descreve o dia e explica o que não correu tão bem..."></textarea>
+                        </div>
+
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep()">← Anterior</button>
+                            <button type="button" class="btn btn-primary" onclick="nextStep()">Seguinte →</button>
+                        </div>
+                    </div>
+
+                    <!-- SECÇÃO 2: As Provas e a Dinâmica de Jogo -->
+                    <div class="form-step" id="step2">
+                        <h3>Secção 2: As Provas e a Dinâmica de Jogo</h3>
+                        <p class="step-description">A tua opinião sobre as provas e mecânicas do jogo</p>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">5.</span>
+                                Qual foi a tua prova favorita de toda a competição? O que a tornou especial?
+                            </label>
+                            <textarea name="prova_favorita" required placeholder="Identifica a prova e explica o que a destacou..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">6.</span>
+                                Qual foi a prova de que menos gostaste? O que poderia ser melhorado?
+                            </label>
+                            <textarea name="prova_menos_favorita" required placeholder="Identifica a prova e sugere melhorias..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">7.</span>
+                                As regras das provas foram sempre claras e fáceis de entender? Se não, dá um exemplo.
+                            </label>
+                            <textarea name="clareza_regras" required placeholder="Comenta sobre a clareza das regras e dá exemplos se aplicável..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">8.</span>
+                                Sentiste que a variedade de provas (habilidade, sorte, equipa, psicológica) foi bem equilibrada?
+                            </label>
+                            <textarea name="equilibrio_provas" required placeholder="Partilha a tua opinião sobre o equilíbrio entre os diferentes tipos de provas..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">9.</span>
+                                A Prova do Telefone foi um elemento interessante ou apenas uma distração? As recompensas/desafios foram justos?
+                            </label>
+                            <textarea name="prova_telefone" required placeholder="Avalia a Prova do Telefone e a justiça das suas recompensas..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">10.</span>
+                                A economia do jogo (Enigma Coins) pareceu-te equilibrada? Achaste justo o sistema de recompensas e a mecânica do "Confronto"?
+                            </label>
+                            <textarea name="economia_jogo" required placeholder="Comenta sobre o sistema de Enigma Coins e a mecânica do Confronto..."></textarea>
+                        </div>
+
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep()">← Anterior</button>
+                            <button type="button" class="btn btn-primary" onclick="nextStep()">Seguinte →</button>
+                        </div>
+                    </div>
+
+                    <!-- SECÇÃO 3: O Enigma e a Produção -->
+                    <div class="form-step" id="step3">
+                        <h3>Secção 3: O Enigma e a Produção</h3>
+                        <p class="step-description">A tua perspetiva sobre a figura do Enigma e a condução do programa</p>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">11.</span>
+                                A presença e as intervenções do Enigma foram um ponto alto do jogo? A sua personalidade foi consistente?
+                            </label>
+                            <textarea name="papel_enigma" required placeholder="Avalia a presença do Enigma e a sua consistência..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">12.</span>
+                                Sentiste que a produção foi justa e imparcial na condução do jogo?
+                            </label>
+                            <textarea name="imparcialidade_producao" required placeholder="Comenta sobre a justiça e imparcialidade da produção..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">13.</span>
+                                Tiveste algum problema técnico (bugs, scripts que não funcionaram, etc.) que tenha afetado negativamente a tua experiência? Se sim, descreve.
+                            </label>
+                            <textarea name="problemas_tecnicos" required placeholder="Descreve quaisquer problemas técnicos que tenhas experienciado..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">14.</span>
+                                O que achaste do papel do Infiltrado? Foi uma boa adição ao jogo?
+                            </label>
+                            <textarea name="papel_infiltrado" required placeholder="Avalia a mecânica do Infiltrado e o seu impacto no jogo..."></textarea>
+                        </div>
+
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep()">← Anterior</button>
+                            <button type="button" class="btn btn-primary" onclick="nextStep()">Seguinte →</button>
+                        </div>
+                    </div>
+
+                    <!-- SECÇÃO 4: O Teu Feedback Aberto -->
+                    <div class="form-step" id="step4">
+                        <h3>Secção 4: O Teu Feedback Aberto</h3>
+                        <p class="step-description">As tuas sugestões e reflexões finais</p>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">15.</span>
+                                Qual foi o momento mais memorável ou impactante que viveste dentro da casa?
+                            </label>
+                            <textarea name="momento_memoravel" required placeholder="Partilha o momento que mais marcou a tua experiência..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">16.</span>
+                                Se pudesses mudar UMA coisa no formato do ENIGMA para o futuro, o que seria?
+                            </label>
+                            <textarea name="mudanca_formato" required placeholder="Sugere uma mudança específica que melhoraria o formato..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">17.</span>
+                                Que tipo de prova ou dinâmica gostarias de ver implementada em futuras edições?
+                            </label>
+                            <textarea name="sugestao_prova" required placeholder="Descreve a tua ideia de prova ou dinâmica..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <span class="question-number">18.</span>
+                                Há mais algum feedback, crítica ou sugestão que queiras partilhar connosco para continuarmos a melhorar esta experiência?
+                            </label>
+                            <textarea name="feedback_adicional" required placeholder="Partilha qualquer outro comentário, crítica ou sugestão..."></textarea>
+                        </div>
+
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary" onclick="prevStep()">← Anterior</button>
+                            <button type="submit" class="btn btn-primary">Enviar Feedback ✓</button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2025 O ENIGMA - Reality Show</p>
+            <p>Formulário confidencial reservado aos concorrentes</p>
+        </div>
+    </footer>
+</body>
+</html>
+
